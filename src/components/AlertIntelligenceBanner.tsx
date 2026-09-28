@@ -9,7 +9,7 @@ interface Props {
   alert: WeatherAlert;
 }
 
-export const AlertIntelligenceBanner: React.FC<Props> = ({ alert }) => {
+const AlertIntelligenceBannerComponent: React.FC<Props> = ({ alert }) => {
   const { theme, dismissAlert } = useApp();
   const [expanded, setExpanded] = useState(true);
   const [acknowledged, setAcknowledged] = useState(false);
@@ -300,3 +300,5 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
 });
+
+export const AlertIntelligenceBanner = React.memo(AlertIntelligenceBannerComponent);

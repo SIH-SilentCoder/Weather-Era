@@ -6,7 +6,7 @@ import { LocationItem } from '../types';
 import { MOCK_WEATHER_DATABASE } from '../services/weatherService';
 import { radii, spacing } from '../theme';
 
-export const SavedLocationsCarousel: React.FC = () => {
+const SavedLocationsCarouselComponent: React.FC = () => {
   const { theme, savedLocations, selectedLocation, setSelectedLocation, addSavedLocation, t } = useApp();
   const [modalVisible, setModalVisible] = useState(false);
   const [newPlaceName, setNewPlaceName] = useState('');
@@ -435,3 +435,5 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
   },
 });
+
+export const SavedLocationsCarousel = React.memo(SavedLocationsCarouselComponent);

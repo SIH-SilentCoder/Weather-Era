@@ -9,7 +9,7 @@ interface Props {
   impactData: WeatherImpactAnalysis;
 }
 
-export const ImpactActionCard: React.FC<Props> = ({ impactData }) => {
+const ImpactActionCardComponent: React.FC<Props> = ({ impactData }) => {
   const { theme, persona, t } = useApp();
   
   // Track checked action checklist items
@@ -364,3 +364,5 @@ const styles = StyleSheet.create({
     lineHeight: 14,
   },
 });
+
+export const ImpactActionCard = React.memo(ImpactActionCardComponent);

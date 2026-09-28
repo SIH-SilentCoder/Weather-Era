@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
 import { useApp } from '../context/AppContext';
 import { calculateWeatherImpact } from '../services/impactEngine';
@@ -16,6 +16,7 @@ import { PersonaInsightsCard } from '../components/PersonaInsightsCard';
 import { DesktopSidePanel } from '../components/DesktopSidePanel';
 import { DesktopLeftRail } from '../components/DesktopLeftRail';
 import { PersonalizedGreetingBar } from '../components/PersonalizedGreetingBar';
+import { NetworkResilienceBanner } from '../components/NetworkResilienceBanner';
 import { radii, spacing } from '../theme';
 
 export const HomeScreen: React.FC = () => {
@@ -34,14 +35,23 @@ export const HomeScreen: React.FC = () => {
   const showLeftRail = width >= 1180;
   const showRightPanel = width >= 860;
 
-  const impactData = calculateWeatherImpact(weatherData, persona);
-  const rankedCardMetas = calculatePersonalizedCardRanking(
-    persona, 
-    weatherData, 
-    alerts, 
-    weatherDNA, 
-    timeOfDay, 
-    selectedInterests
+  // Performance: Memoize impact computation to avoid unnecessary re-calculations
+  const impactData = useMemo(
+    () => calculateWeatherImpact(weatherData, persona),
+    [weatherData, persona]
+  );
+
+  // Performance: Memoize ranking sort to eliminate heavy card recalculations on unrelated re-renders
+  const rankedCardMetas = useMemo(
+    () => calculatePersonalizedCardRanking(
+      persona, 
+      weatherData, 
+      alerts, 
+      weatherDNA, 
+      timeOfDay, 
+      selectedInterests
+    ),
+    [persona, weatherData, alerts, weatherDNA, timeOfDay, selectedInterests]
   );
 
   const renderCardContent = (meta: CardScoringMeta, index: number) => {
@@ -128,6 +138,9 @@ export const HomeScreen: React.FC = () => {
         >
           {/* Personalized Salutation, Time Context & Active Interests */}
           <PersonalizedGreetingBar />
+
+          {/* 📶 Low Network Resilience: Cached Data & Stale-Data Indicator */}
+          <NetworkResilienceBanner />
 
           {/* Transparent Adaptation Explanation Layer */}
           <WhyHomepageChangedBanner />

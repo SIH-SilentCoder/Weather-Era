@@ -10,7 +10,7 @@ interface Props {
   weather: WeatherData;
 }
 
-export const WeatherHeroCard: React.FC<Props> = ({ weather }) => {
+const WeatherHeroCardComponent: React.FC<Props> = ({ weather }) => {
   const { theme, refreshWeather, isRefreshing } = useApp();
   const [trustModalVisible, setTrustModalVisible] = useState(false);
 
@@ -624,3 +624,5 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
 });
+
+export const WeatherHeroCard = React.memo(WeatherHeroCardComponent);

@@ -5,7 +5,7 @@ import { calculateRouteWeather, POPULAR_ROUTES } from '../services/routeEngine';
 import { useApp } from '../context/AppContext';
 import { radii, spacing } from '../theme';
 
-export const RouteWeatherCard: React.FC = () => {
+const RouteWeatherCardComponent: React.FC = () => {
   const { theme, t } = useApp();
   const [selectedRouteId, setSelectedRouteId] = useState(POPULAR_ROUTES[0].id);
   const [origin, setOrigin] = useState(POPULAR_ROUTES[0].origin);
@@ -692,3 +692,5 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
 });
+
+export const RouteWeatherCard = React.memo(RouteWeatherCardComponent);

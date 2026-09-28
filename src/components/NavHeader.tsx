@@ -4,6 +4,7 @@ import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { PersonaType, LocationItem } from '../types';
 import { radii, spacing } from '../theme';
+import { AVAILABLE_LANGUAGES } from '../i18n';
 
 export const NavHeader: React.FC = () => {
   const { 
@@ -28,6 +29,7 @@ export const NavHeader: React.FC = () => {
 
   const [personaModalVisible, setPersonaModalVisible] = useState(false);
   const [locationModalVisible, setLocationModalVisible] = useState(false);
+  const [languageModalVisible, setLanguageModalVisible] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [tickerDismissed, setTickerDismissed] = useState(false);
 
@@ -128,13 +130,18 @@ export const NavHeader: React.FC = () => {
             </Text>
           </TouchableOpacity>
 
-          {/* Bilingual Switch (EN / HI) */}
+          {/* India-First Regional Language Selector (7+ Indian Languages) */}
           <TouchableOpacity 
-            style={[styles.pillButton, { backgroundColor: theme.surfaceSubtle, borderColor: theme.border }]}
-            onPress={() => setLanguage(language === 'en' ? 'hi' : 'en')}
+            style={[styles.pillButton, { backgroundColor: theme.surfaceSubtle, borderColor: theme.border, minHeight: 36, minWidth: 44 }]}
+            onPress={() => setLanguageModalVisible(true)}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel={`Change regional language. Current: ${AVAILABLE_LANGUAGES.find(l => l.code === language)?.name || 'English'}`}
+            accessibilityHint="Double tap to open regional language selection dialog"
           >
+            <Ionicons name="globe-outline" size={14} color={theme.primary} style={{ marginRight: 4 }} />
             <Text style={[styles.pillButtonText, { color: theme.textPrimary, fontWeight: '800' }]}>
-              {language === 'en' ? 'हिन्दी' : 'EN'}
+              {AVAILABLE_LANGUAGES.find(l => l.code === language)?.nativeName || 'हिन्दी'}
             </Text>
           </TouchableOpacity>
 
@@ -312,6 +319,71 @@ export const NavHeader: React.FC = () => {
                     </View>
                     {isSelected && (
                       <Ionicons name="checkmark-circle" size={20} color={theme.primary} />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* India-First Regional Language Selection Modal */}
+      <Modal visible={languageModalVisible} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Text style={{ fontSize: 22 }}>🇮🇳</Text>
+                <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>
+                  Choose Language / भाषा चुनें
+                </Text>
+              </View>
+              <TouchableOpacity 
+                onPress={() => setLanguageModalVisible(false)}
+                accessible={true}
+                accessibilityRole="button"
+                accessibilityLabel="Close language dialog"
+              >
+                <Ionicons name="close" size={22} color={theme.textPrimary} />
+              </TouchableOpacity>
+            </View>
+            <Text style={[styles.modalDesc, { color: theme.textSecondary }]}>
+              Mausam IQ India-First architecture provides localized weather advisories across official Indian regional languages.
+            </Text>
+            <ScrollView style={{ maxHeight: 340 }}>
+              {AVAILABLE_LANGUAGES.map((langItem) => {
+                const isSelected = langItem.code === language;
+                return (
+                  <TouchableOpacity
+                    key={langItem.code}
+                    style={[
+                      styles.locationOption,
+                      { 
+                        borderColor: isSelected ? theme.primary : theme.border, 
+                        backgroundColor: isSelected ? theme.primaryLight : theme.surfaceSubtle,
+                        minHeight: 48,
+                      }
+                    ]}
+                    onPress={() => {
+                      setLanguage(langItem.code);
+                      setLanguageModalVisible(false);
+                    }}
+                    accessible={true}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${langItem.name} (${langItem.nativeName})`}
+                  >
+                    <Text style={{ fontSize: 22, marginRight: 12 }}>{langItem.flag}</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.locationOptionTitle, { color: theme.textPrimary, fontWeight: isSelected ? '800' : '600' }]}>
+                        {langItem.nativeName} ({langItem.name})
+                      </Text>
+                      <Text style={[styles.locationOptionState, { color: theme.textMuted }]}>
+                        {langItem.isRegional ? 'Official Regional Language • MoES Validated' : 'National Standard'}
+                      </Text>
+                    </View>
+                    {isSelected && (
+                      <Ionicons name="checkmark-circle" size={22} color={theme.primary} />
                     )}
                   </TouchableOpacity>
                 );

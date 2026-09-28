@@ -151,6 +151,10 @@ export interface RouteCheckpoint {
   windSpeed: number;
   hazardNote?: string;
   isHazardous: boolean;
+  visibilityKm?: number;
+  roadWaterLevel?: string;
+  safeTransitAdvice?: string;
+  corridorStatus?: 'clear' | 'caution' | 'danger';
 }
 
 export interface WeatherDNA {

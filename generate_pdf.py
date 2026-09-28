@@ -202,8 +202,17 @@ def generate_pdf():
         "• Dual Modes: Focus Deep-Dive View & Side-by-Side Matrix Table comparing Rain %, Delay, Waterlogging, and AI Verdicts."
     )
 
-    # 4.4 Radar Map
-    pdf.section_title("4. Dual-Scope Radar Map (India National Radar + All Over The World Map)")
+    # 4.4 Start -> Destination Weather Checkpoints
+    pdf.section_title("4. Start -> Destination Corridor Weather Checkpoints (Corridor Mesonet)")
+    pdf.body_p(
+        "• Micro-Climate Checkpoint Timeline: Tracks live weather between Start and Destination nodes with color-coded safety indicators (Clear, Caution, Danger).\n"
+        "• Road Surface & Ponding Telemetry: Detects waterlogging depth (e.g. Underpass Ponding > 1.2 ft), crosswind gusts on flyways, and low visibility (< 1.8 km).\n"
+        "• Major Highway Corridors: Calibrated datasets for Delhi-Gurugram Expressway (31 km), Airport Express (38 km), GT Road Agri Corridor (128 km), and Pune IT Corridor (20 km).\n"
+        "• Tap-to-Inspect Safety Protocol: Tapping any node displays official IMD highway guidance (e.g. 'Use upper flyover, avoid waterlogged underpass ramp')."
+    )
+
+    # 4.5 Radar Map
+    pdf.section_title("5. Dual-Scope Radar Map (India National Radar + All Over The World Map)")
     pdf.body_p(
         "• India Radar: Doppler composite, lightning alerts, cloud animation, and IMD coastal mesonet.\n"
         "• World Map: Global metropolises (Tokyo, London, NYC, Dubai), Jet Streams, ITCZ rain belt, and timezones."

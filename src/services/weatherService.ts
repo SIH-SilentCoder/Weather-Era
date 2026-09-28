@@ -1,0 +1,313 @@
+import { WeatherData, HourlyForecastItem, DailyForecastItem, WeatherAlert, LocationItem } from '../types';
+
+export const DEFAULT_SAVED_LOCATIONS: LocationItem[] = [
+  { id: 'delhi', name: 'New Delhi', state: 'Delhi NCR', type: 'home', lat: 28.6139, lon: 77.2090, isCurrent: true },
+  { id: 'gurugram', name: 'Cyber City, Gurugram', state: 'Haryana', type: 'office', lat: 28.4595, lon: 77.0266 },
+  { id: 'karnal', name: 'Karnal Agri-Zone', state: 'Haryana', type: 'farm', lat: 29.6857, lon: 76.9905 },
+  { id: 'pune', name: 'Pune (Family)', state: 'Maharashtra', type: 'family', lat: 18.5204, lon: 73.8567 },
+  { id: 'kochi', name: 'Kochi Harbor', state: 'Kerala', type: 'village', lat: 9.9312, lon: 76.2673 },
+];
+
+export const MOCK_WEATHER_DATABASE: Record<string, WeatherData> = {
+  delhi: {
+    city: 'New Delhi',
+    state: 'National Capital Region',
+    temperature: 31,
+    feelsLike: 35,
+    condition: 'Thunderstorm with Gusty Winds',
+    conditionCode: 'thunderstorm',
+    humidity: 78,
+    windSpeed: 28,
+    windDirection: 'ENE',
+    visibility: 3.5,
+    uvIndex: 4,
+    aqi: 142,
+    aqiCategory: 'Moderate',
+    pressure: 1008,
+    rainProbability: 82,
+    rainfallMm: 18.5,
+    dewPoint: 24,
+    sunrise: '06:14 AM',
+    sunset: '06:38 PM',
+    lastUpdated: '4 mins ago',
+    freshnessMins: 4,
+    confidenceScore: 92,
+    confidenceLevel: 'High',
+    dataSource: 'IMD Palam Doppler Weather Radar & MoES WRF Ensemble',
+  },
+  gurugram: {
+    city: 'Cyber City, Gurugram',
+    state: 'Haryana',
+    temperature: 30,
+    feelsLike: 34,
+    condition: 'Heavy Rain Showers',
+    conditionCode: 'rain',
+    humidity: 84,
+    windSpeed: 32,
+    windDirection: 'ENE',
+    visibility: 2.8,
+    uvIndex: 3,
+    aqi: 120,
+    aqiCategory: 'Moderate',
+    pressure: 1007,
+    rainProbability: 88,
+    rainfallMm: 24.0,
+    dewPoint: 25,
+    sunrise: '06:15 AM',
+    sunset: '06:39 PM',
+    lastUpdated: '6 mins ago',
+    freshnessMins: 6,
+    confidenceScore: 89,
+    confidenceLevel: 'High',
+    dataSource: 'IMD Delhi-NCR Mesonet Surface Observations',
+  },
+  karnal: {
+    city: 'Karnal Agri-Zone',
+    state: 'Haryana',
+    temperature: 28,
+    feelsLike: 31,
+    condition: 'Moderate Rain & Overcast',
+    conditionCode: 'rain',
+    humidity: 88,
+    windSpeed: 18,
+    windDirection: 'E',
+    visibility: 5.0,
+    uvIndex: 2,
+    aqi: 65,
+    aqiCategory: 'Satisfactory',
+    pressure: 1009,
+    rainProbability: 74,
+    rainfallMm: 12.0,
+    dewPoint: 23,
+    sunrise: '06:13 AM',
+    sunset: '06:40 PM',
+    lastUpdated: '12 mins ago',
+    freshnessMins: 12,
+    confidenceScore: 94,
+    confidenceLevel: 'High',
+    dataSource: 'IMD Agromet Advisory & ICAR Karnal AWS',
+  },
+  pune: {
+    city: 'Pune',
+    state: 'Maharashtra',
+    temperature: 27,
+    feelsLike: 28,
+    condition: 'Partly Cloudy with Drizzle',
+    conditionCode: 'cloudy',
+    humidity: 68,
+    windSpeed: 14,
+    windDirection: 'WNW',
+    visibility: 7.0,
+    uvIndex: 6,
+    aqi: 72,
+    aqiCategory: 'Satisfactory',
+    pressure: 1012,
+    rainProbability: 35,
+    rainfallMm: 2.0,
+    dewPoint: 19,
+    sunrise: '06:26 AM',
+    sunset: '06:42 PM',
+    lastUpdated: '18 mins ago',
+    freshnessMins: 18,
+    confidenceScore: 88,
+    confidenceLevel: 'High',
+    dataSource: 'IMD Pashan Observatory & INSAT-3DR Multispectral',
+  },
+  kochi: {
+    city: 'Kochi Harbor',
+    state: 'Kerala',
+    temperature: 29,
+    feelsLike: 34,
+    condition: 'High Sea Squall & Rain',
+    conditionCode: 'rain',
+    humidity: 91,
+    windSpeed: 42,
+    windDirection: 'SSW',
+    visibility: 3.0,
+    uvIndex: 5,
+    aqi: 38,
+    aqiCategory: 'Good',
+    pressure: 1005,
+    rainProbability: 95,
+    rainfallMm: 45.0,
+    dewPoint: 26,
+    sunrise: '06:20 AM',
+    sunset: '06:33 PM',
+    lastUpdated: '2 mins ago',
+    freshnessMins: 2,
+    confidenceScore: 96,
+    confidenceLevel: 'High',
+    dataSource: 'INCOIS Coastal Buoys & IMD Kochi Doppler Radar',
+  },
+};
+
+export const MOCK_ACTIVE_ALERTS: WeatherAlert[] = [
+  {
+    id: 'alt-01',
+    severity: 'severe',
+    colorCode: 'orange',
+    headline: 'ORANGE ALERT: Heavy to Very Heavy Rain with Severe Thunderstorm',
+    type: 'Thunderstorm & Rain',
+    affectedDistricts: ['New Delhi', 'Gurugram', 'Faridabad', 'Noida', 'Ghaziabad'],
+    issuedAt: 'Today 17:30 IST',
+    validTill: 'Tonight 23:30 IST',
+    description: 'Squall winds gusting to 50–60 km/h with intensive lightning strikes and temporary waterlogging on low-lying underpasses and roads.',
+    actionGuidance: 'Avoid sheltering beneath trees or temporary metal structures. Commuters are advised to defer non-essential travel till squall subsides.',
+    source: 'IMD Regional Meteorological Centre, New Delhi',
+  },
+  {
+    id: 'alt-02',
+    severity: 'severe',
+    colorCode: 'red',
+    headline: 'RED ALERT: High Wave & Marine Wind Squall Advisory for Fishermen',
+    type: 'Marine Wind Warning',
+    affectedDistricts: ['Ernakulam', 'Alappuzha', 'Kochi Offshore'],
+    issuedAt: 'Today 15:00 IST',
+    validTill: 'Tomorrow 18:00 IST',
+    description: 'Wind speeds exceeding 45–55 km/h gusting to 65 km/h along Kerala and Lakshadweep coasts. Sea condition likely very rough.',
+    actionGuidance: 'Fishermen are strictly advised NOT to venture into deep sea or coastal waters during the warning period.',
+    source: 'INCOIS & IMD Marine Weather Warning Division',
+  }
+];
+
+export const getHourlyForecast = (baseCondition: string = 'rain'): HourlyForecastItem[] => {
+  const currentHour = new Date().getHours();
+  const hours: HourlyForecastItem[] = [];
+  
+  const hourLabels = [
+    'Now', '+1h', '+2h', '+3h', '+4h', '+5h', '+6h', '+7h', '+8h', '+9h', '+10h', '+12h'
+  ];
+
+  const rainProbs = [82, 88, 75, 55, 40, 25, 20, 15, 10, 15, 20, 30];
+  const temps = [31, 30, 29, 28, 27, 27, 26, 26, 27, 28, 30, 32];
+  const winds = [28, 32, 26, 22, 18, 16, 14, 12, 14, 16, 18, 20];
+
+  for (let i = 0; i < hourLabels.length; i++) {
+    const hr = (currentHour + i) % 24;
+    const period = hr >= 12 ? 'PM' : 'AM';
+    const displayHr = hr % 12 === 0 ? 12 : hr % 12;
+    const timeStr = i === 0 ? 'Now' : `${displayHr} ${period}`;
+    const p = rainProbs[i] ?? 30;
+
+    hours.push({
+      time: timeStr,
+      timestamp: Date.now() + i * 3600000,
+      temperature: temps[i] ?? 28,
+      condition: p > 70 ? 'Heavy Rain' : p > 40 ? 'Scattered Rain' : 'Cloudy',
+      conditionCode: p > 70 ? 'rain' : p > 40 ? 'rain' : 'cloudy',
+      rainProbability: p,
+      windSpeed: winds[i] ?? 18,
+      isNow: i === 0,
+    });
+  }
+
+  return hours;
+};
+
+export const getDailyForecast = (): DailyForecastItem[] => {
+  return [
+    {
+      day: 'Today',
+      date: '28 Sep',
+      tempMax: 32,
+      tempMin: 25,
+      condition: 'Thunderstorm & Rain',
+      conditionCode: 'thunderstorm',
+      rainProbability: 82,
+      rainfallMm: 22.4,
+      uvIndex: 4,
+      summary: 'Heavy evening downpours with gusty convective winds; easing post-midnight.',
+    },
+    {
+      day: 'Tue',
+      date: '29 Sep',
+      tempMax: 33,
+      tempMin: 26,
+      condition: 'Scattered Showers',
+      conditionCode: 'rain',
+      rainProbability: 60,
+      rainfallMm: 8.5,
+      uvIndex: 6,
+      summary: 'Passing morning showers followed by partial afternoon clearing.',
+    },
+    {
+      day: 'Wed',
+      date: '30 Sep',
+      tempMax: 34,
+      tempMin: 26,
+      condition: 'Partly Cloudy',
+      conditionCode: 'cloudy',
+      rainProbability: 25,
+      rainfallMm: 1.0,
+      uvIndex: 8,
+      summary: 'Humid conditions with intervals of bright sunshine and light breezes.',
+    },
+    {
+      day: 'Thu',
+      date: '01 Oct',
+      tempMax: 35,
+      tempMin: 27,
+      condition: 'Sunny & Warm',
+      conditionCode: 'sunny',
+      rainProbability: 10,
+      rainfallMm: 0.0,
+      uvIndex: 9,
+      summary: 'Clear skies across the plains, elevated afternoon temperatures.',
+    },
+    {
+      day: 'Fri',
+      date: '02 Oct',
+      tempMax: 34,
+      tempMin: 26,
+      condition: 'Mainly Clear',
+      conditionCode: 'sunny',
+      rainProbability: 15,
+      rainfallMm: 0.0,
+      uvIndex: 8,
+      summary: 'Pleasant morning conditions with moderate dry westerly winds.',
+    },
+    {
+      day: 'Sat',
+      date: '03 Oct',
+      tempMax: 33,
+      tempMin: 25,
+      condition: 'Isolated Drizzle',
+      conditionCode: 'cloudy',
+      rainProbability: 35,
+      rainfallMm: 2.1,
+      uvIndex: 7,
+      summary: 'Localized convective cloud build-up towards the evening.',
+    },
+    {
+      day: 'Sun',
+      date: '04 Oct',
+      tempMax: 32,
+      tempMin: 24,
+      condition: 'Light Showers',
+      conditionCode: 'rain',
+      rainProbability: 45,
+      rainfallMm: 5.0,
+      uvIndex: 6,
+      summary: 'Breezy with intermittent light showers across southern sectors.',
+    }
+  ];
+};
+
+export const fetchWeatherForLocation = async (loc: LocationItem): Promise<WeatherData> => {
+  // If location has mock profile, return it with live updated freshness
+  if (MOCK_WEATHER_DATABASE[loc.id]) {
+    const data = { ...MOCK_WEATHER_DATABASE[loc.id] };
+    data.lastUpdated = 'Just now';
+    data.freshnessMins = 1;
+    return data;
+  }
+
+  // Fallback to default delhi profile customized with location name
+  return {
+    ...MOCK_WEATHER_DATABASE['delhi'],
+    city: loc.name,
+    state: loc.state,
+    lastUpdated: '1 min ago',
+    freshnessMins: 1,
+  };
+};

@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
 import { useApp } from '../context/AppContext';
 import { calculateWeatherImpact } from '../services/impactEngine';
-import { getRankedCardsForPersona } from '../services/personalizationEngine';
+import { calculatePersonalizedCardRanking, CardScoringMeta } from '../services/personalizationEngine';
 import { WeatherHeroCard } from '../components/WeatherHeroCard';
 import { ImpactActionCard } from '../components/ImpactActionCard';
 import { WeatherImpactScoreCard } from '../components/WeatherImpactScoreCard';
@@ -15,52 +15,103 @@ import { SavedLocationsCarousel } from '../components/SavedLocationsCarousel';
 import { PersonaInsightsCard } from '../components/PersonaInsightsCard';
 import { DesktopSidePanel } from '../components/DesktopSidePanel';
 import { DesktopLeftRail } from '../components/DesktopLeftRail';
-import { spacing } from '../theme';
+import { PersonalizedGreetingBar } from '../components/PersonalizedGreetingBar';
+import { radii, spacing } from '../theme';
 
 export const HomeScreen: React.FC = () => {
-  const { weatherData, persona, alerts, weatherDNA } = useApp();
+  const { 
+    weatherData, 
+    persona, 
+    alerts, 
+    weatherDNA, 
+    timeOfDay, 
+    selectedInterests,
+    theme
+  } = useApp();
+
   const { width } = useWindowDimensions();
   
   const showLeftRail = width >= 1180;
   const showRightPanel = width >= 860;
 
   const impactData = calculateWeatherImpact(weatherData, persona);
-  const rankedCards = getRankedCardsForPersona(persona, weatherData, alerts, weatherDNA);
+  const rankedCardMetas = calculatePersonalizedCardRanking(
+    persona, 
+    weatherData, 
+    alerts, 
+    weatherDNA, 
+    timeOfDay, 
+    selectedInterests
+  );
 
-  const renderCard = (cardType: string) => {
-    switch (cardType) {
+  const renderCardContent = (meta: CardScoringMeta, index: number) => {
+    let cardElement: React.ReactNode = null;
+
+    switch (meta.cardType) {
       case 'severe_alert':
-        return alerts.length > 0 ? (
+        cardElement = alerts.length > 0 ? (
           <AlertIntelligenceBanner key="alert" alert={alerts[0]} />
         ) : null;
+        break;
 
       case 'weather_hero':
-        return <WeatherHeroCard key="hero" weather={weatherData} />;
+        cardElement = <WeatherHeroCard key="hero" weather={weatherData} />;
+        break;
 
       case 'weather_impact_action':
-        return <ImpactActionCard key="impact_action" impactData={impactData} />;
+        cardElement = <ImpactActionCard key="impact_action" impactData={impactData} />;
+        break;
 
       case 'impact_score':
-        return <WeatherImpactScoreCard key="impact_score" impactData={impactData} />;
+        cardElement = <WeatherImpactScoreCard key="impact_score" impactData={impactData} />;
+        break;
 
       case 'what_if_simulator':
-        return <WhatIfSimulatorCard key="what_if" />;
+        cardElement = <WhatIfSimulatorCard key="what_if" />;
+        break;
 
       case 'hourly_forecast':
-        return <HourlyForecastStrip key="hourly" />;
+        cardElement = <HourlyForecastStrip key="hourly" />;
+        break;
 
       case 'route_weather':
-        return <RouteWeatherCard key="route" />;
+        cardElement = <RouteWeatherCard key="route" />;
+        break;
 
       case 'persona_insights':
-        return <PersonaInsightsCard key="insights" />;
+        cardElement = <PersonaInsightsCard key="insights" />;
+        break;
 
       case 'saved_locations':
-        return <SavedLocationsCarousel key="saved_locs" />;
+        cardElement = <SavedLocationsCarousel key="saved_locs" />;
+        break;
 
       default:
-        return null;
+        cardElement = null;
     }
+
+    if (!cardElement) return null;
+
+    // Display ranking priority tag for cards that were boosted by user interests or time of day
+    const isSpecialBoosted = meta.triggeredBy.length > 0 && meta.cardType !== 'weather_hero';
+
+    return (
+      <View key={`${meta.cardType}-${index}`} style={styles.cardWrapper}>
+        {isSpecialBoosted && (
+          <View style={styles.boostBadgeRow}>
+            <View style={[styles.boostPill, { backgroundColor: theme.primaryLight, borderColor: theme.primary }]}>
+              <Text style={[styles.boostRank, { color: theme.primary }]}>
+                #{index + 1}
+              </Text>
+              <Text style={[styles.boostText, { color: theme.primary }]} numberOfLines={1}>
+                {meta.triggeredBy[0]}
+              </Text>
+            </View>
+          </View>
+        )}
+        {cardElement}
+      </View>
+    );
   };
 
   return (
@@ -75,11 +126,14 @@ export const HomeScreen: React.FC = () => {
           contentContainerStyle={[styles.feedContent, showRightPanel && styles.desktopFeedContent]}
           showsVerticalScrollIndicator={false}
         >
-          {/* Explanation Layer Banner */}
+          {/* Personalized Salutation, Time Context & Active Interests */}
+          <PersonalizedGreetingBar />
+
+          {/* Transparent Adaptation Explanation Layer */}
           <WhyHomepageChangedBanner />
 
-          {/* Persona-Ranked Cards */}
-          {rankedCards.map((c) => renderCard(c))}
+          {/* Dynamically Scored & Re-ranked Cards */}
+          {rankedCardMetas.map((meta, idx) => renderCardContent(meta, idx))}
 
           <View style={{ height: 40 }} />
         </ScrollView>
@@ -106,8 +160,36 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxl,
   },
   desktopFeedContent: {
-    maxWidth: 720,
+    maxWidth: 740,
     width: '100%',
     alignSelf: 'center',
+  },
+  cardWrapper: {
+    marginBottom: 2,
+  },
+  boostBadgeRow: {
+    marginHorizontal: spacing.md,
+    marginTop: spacing.sm,
+    marginBottom: -8,
+    zIndex: 1,
+    flexDirection: 'row',
+  },
+  boostPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: radii.sm,
+    borderWidth: 1,
+  },
+  boostRank: {
+    fontSize: 9,
+    fontWeight: '900',
+  },
+  boostText: {
+    fontSize: 9,
+    fontWeight: '700',
+    maxWidth: 320,
   },
 });

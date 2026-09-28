@@ -5,7 +5,9 @@ import {
   WeatherData, 
   WeatherAlert, 
   WeatherDNA, 
-  HomepageExplanation 
+  HomepageExplanation,
+  TimeOfDay,
+  UserInterest
 } from '../types';
 import { 
   DEFAULT_SAVED_LOCATIONS, 
@@ -27,9 +29,22 @@ export const INITIAL_WEATHER_DNA: WeatherDNA = {
   learningPaused: false,
 };
 
+const getCalculatedTimeOfDay = (): TimeOfDay => {
+  const hr = new Date().getHours();
+  if (hr >= 5 && hr < 12) return 'morning';
+  if (hr >= 12 && hr < 17) return 'afternoon';
+  if (hr >= 17 && hr < 22) return 'evening';
+  return 'night';
+};
+
 interface AppContextType {
   persona: PersonaType;
   setPersona: (p: PersonaType) => void;
+  selectedInterests: UserInterest[];
+  toggleInterest: (interest: UserInterest) => void;
+  timeOfDay: TimeOfDay;
+  timeOfDayOverride: TimeOfDay | null;
+  setTimeOfDayOverride: (tod: TimeOfDay | null) => void;
   selectedLocation: LocationItem;
   setSelectedLocation: (l: LocationItem) => void;
   savedLocations: LocationItem[];
@@ -59,16 +74,22 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [persona, setPersona] = useState<PersonaType>('commuter');
+  const [selectedInterests, setSelectedInterests] = useState<UserInterest[]>(['waterlogging', 'transit_delays']);
+  const [timeOfDayOverride, setTimeOfDayOverride] = useState<TimeOfDay | null>(null);
   const [savedLocations, setSavedLocations] = useState<LocationItem[]>(DEFAULT_SAVED_LOCATIONS);
   const [selectedLocation, setSelectedLocation] = useState<LocationItem>(DEFAULT_SAVED_LOCATIONS[0]);
   const [weatherData, setWeatherData] = useState<WeatherData>(MOCK_WEATHER_DATABASE['delhi']);
   const [alerts, setAlerts] = useState<WeatherAlert[]>(MOCK_ACTIVE_ALERTS);
-  const [themeMode, setThemeMode] = useState<'light' | 'dark'>('dark'); // Default to sleek modern dark mode
+  const [themeMode, setThemeMode] = useState<'light' | 'dark'>('dark');
   const [language, setLanguage] = useState<Language>('en');
   const [weatherDNA, setWeatherDNA] = useState<WeatherDNA>(INITIAL_WEATHER_DNA);
   const [currentTab, setCurrentTab] = useState<'home' | 'forecast' | 'map' | 'ai' | 'profile'>('home');
   const [isOffline, setIsOffline] = useState<boolean>(false);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+
+  const timeOfDay = useMemo(() => {
+    return timeOfDayOverride || getCalculatedTimeOfDay();
+  }, [timeOfDayOverride]);
 
   // Sync weather data when selectedLocation changes
   useEffect(() => {
@@ -79,20 +100,42 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return () => { isMounted = false; };
   }, [selectedLocation]);
 
-  // Adjust DNA when persona changes to align transparent defaults
+  // Adjust default interests when persona changes
   useEffect(() => {
-    if (weatherDNA.learningPaused) return;
-
     if (persona === 'farmer') {
-      setWeatherDNA(prev => ({ ...prev, agricultureFocus: 5, rainSensitivity: 5, commuteFrequency: 1 }));
+      setSelectedInterests(['spraying', 'lightning']);
+      if (!weatherDNA.learningPaused) {
+        setWeatherDNA(prev => ({ ...prev, agricultureFocus: 5, rainSensitivity: 5, commuteFrequency: 1 }));
+      }
     } else if (persona === 'commuter') {
-      setWeatherDNA(prev => ({ ...prev, commuteFrequency: 5, rainSensitivity: 4, agricultureFocus: 1 }));
+      setSelectedInterests(['waterlogging', 'transit_delays']);
+      if (!weatherDNA.learningPaused) {
+        setWeatherDNA(prev => ({ ...prev, commuteFrequency: 5, rainSensitivity: 4, agricultureFocus: 1 }));
+      }
     } else if (persona === 'health') {
-      setWeatherDNA(prev => ({ ...prev, aqiSensitivity: 5, temperatureSensitivity: 4 }));
+      setSelectedInterests(['aqi_bronchial']);
+      if (!weatherDNA.learningPaused) {
+        setWeatherDNA(prev => ({ ...prev, aqiSensitivity: 5, temperatureSensitivity: 4 }));
+      }
     } else if (persona === 'outdoor') {
-      setWeatherDNA(prev => ({ ...prev, outdoorSports: 5, temperatureSensitivity: 4 }));
+      setSelectedInterests(['workout', 'lightning']);
+      if (!weatherDNA.learningPaused) {
+        setWeatherDNA(prev => ({ ...prev, outdoorSports: 5, temperatureSensitivity: 4 }));
+      }
+    } else if (persona === 'fisherman') {
+      setSelectedInterests(['marine_swell']);
+    } else if (persona === 'traveller') {
+      setSelectedInterests(['transit_delays', 'waterlogging']);
     }
   }, [persona]);
+
+  const toggleInterest = (interest: UserInterest) => {
+    setSelectedInterests(prev => 
+      prev.includes(interest) 
+        ? prev.filter(i => i !== interest)
+        : [...prev, interest]
+    );
+  };
 
   const theme = useMemo(() => (themeMode === 'light' ? lightPalette : darkPalette), [themeMode]);
   const t = useMemo(() => translations[language], [language]);
@@ -126,14 +169,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const explanation = useMemo(() => {
-    return getHomepageChangeExplanation(persona, weatherData, alerts, weatherDNA);
-  }, [persona, weatherData, alerts, weatherDNA]);
+    return getHomepageChangeExplanation(
+      persona, 
+      weatherData, 
+      alerts, 
+      weatherDNA, 
+      timeOfDay, 
+      selectedInterests
+    );
+  }, [persona, weatherData, alerts, weatherDNA, timeOfDay, selectedInterests]);
 
   return (
     <AppContext.Provider
       value={{
         persona,
         setPersona,
+        selectedInterests,
+        toggleInterest,
+        timeOfDay,
+        timeOfDayOverride,
+        setTimeOfDayOverride,
         selectedLocation,
         setSelectedLocation,
         savedLocations,

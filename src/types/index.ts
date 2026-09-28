@@ -7,6 +7,17 @@ export type PersonaType =
   | 'health' 
   | 'fisherman';
 
+export type TimeOfDay = 'morning' | 'afternoon' | 'evening' | 'night';
+
+export type UserInterest = 
+  | 'spraying' 
+  | 'waterlogging' 
+  | 'lightning' 
+  | 'workout' 
+  | 'aqi_bronchial' 
+  | 'marine_swell' 
+  | 'transit_delays';
+
 export interface LocationItem {
   id: string;
   name: string;

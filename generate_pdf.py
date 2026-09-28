@@ -252,6 +252,23 @@ def generate_pdf():
         "• Voice Weather Bulletin: Integrated simulated audio voice bulletin for accessibility across literacy levels."
     )
 
+    # 4.10 Smart Alerts
+    pdf.section_title("10. Smart Alerts (Automatic Top Priority Rank #1)")
+    pdf.body_p(
+        "• Emergency Algorithmic Override: Severe and extreme IMD disaster warnings (Orange & Red alerts) are dynamically assigned top priority (Score 1000) over all general cards.\n"
+        "• Doppler Threat Breakdown: Real-time convective cloud depth, rain rate, affected districts, and 24x7 National Disaster Helpline (1070/112).\n"
+        "• Citizen Acknowledge Control: Allows citizen to mark emergency advisory as acknowledged while keeping critical alerts pinned."
+    )
+
+    # 4.11 Saved Places
+    pdf.section_title("11. Saved Places (Multi-Location Surveillance: Home, College, Office, Village, Farm, Destination)")
+    pdf.body_p(
+        "• 6 Specialized Location Archetypes: Dedicated tracking for Home, College / Campus, Office, Village, Farm, and Travel Destination.\n"
+        "• Live Micro-Weather Snapshots: Displays live temperature, rain probability, and sky conditions for each registered place.\n"
+        "• 1-Tap Location Switching: Instantly re-configures the entire homepage, Doppler radar view, and route mesonet to the selected place.\n"
+        "• Custom Place Creator: Interactive modal for adding custom family hubs, ancestral villages, or transit destinations."
+    )
+
     # 5. Evaluator & Hackathon Summary
     pdf.chapter_title("5", "SIH EVALUATION & SYSTEM VERIFICATION")
     pdf.body_p(

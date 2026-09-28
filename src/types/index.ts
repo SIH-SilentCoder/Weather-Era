@@ -22,7 +22,7 @@ export interface LocationItem {
   id: string;
   name: string;
   state: string;
-  type: 'home' | 'office' | 'farm' | 'village' | 'family' | 'custom';
+  type: 'home' | 'college' | 'office' | 'village' | 'farm' | 'destination' | 'family' | 'custom';
   lat: number;
   lon: number;
   isCurrent?: boolean;

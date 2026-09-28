@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -6,20 +6,20 @@ import {
   TouchableOpacity, 
   ScrollView, 
   TextInput, 
-  useWindowDimensions, 
-  Animated 
+  useWindowDimensions 
 } from 'react-native';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { radii, spacing } from '../theme';
 
-interface CityPoint {
+export interface MapCityPoint {
   id: string;
   name: string;
-  state: string;
-  region: 'North' | 'South' | 'West' | 'East' | 'Central';
-  x: number; // percentage across India canvas
-  y: number; // percentage down India canvas
+  countryOrState: string;
+  scope: 'india' | 'world';
+  continentOrRegion: string;
+  x: number; // percentage across canvas
+  y: number; // percentage down canvas
   temp: number;
   condition: string;
   rainProb: number;
@@ -28,34 +28,57 @@ interface CityPoint {
   aqi: number;
   humidity: number;
   pressure: number;
+  timeZoneOffset: string;
   alert?: { level: 'orange' | 'red' | 'yellow'; title: string; advisory: string };
-  radarDbz: number; // Doppler reflectivity (10 - 65 dBZ)
+  radarDbz: number;
 }
 
-const INDIAN_CITIES: CityPoint[] = [
-  { id: 'delhi', name: 'New Delhi (NCR)', state: 'Delhi', region: 'North', x: 38, y: 26, temp: 31, condition: 'Thunderstorm with Squall', rainProb: 82, windSpeed: 28, windDir: 'ENE', aqi: 142, humidity: 78, pressure: 1008, alert: { level: 'orange', title: 'Orange Warning: Heavy Rain & Gusts', advisory: 'Avoid underpasses on NH-48; peak rain between 18:30–21:00 IST' }, radarDbz: 52 },
-  { id: 'srinagar', name: 'Srinagar', state: 'J&K', region: 'North', x: 30, y: 12, temp: 19, condition: 'Light Mountain Showers', rainProb: 45, windSpeed: 12, windDir: 'NW', aqi: 42, humidity: 62, pressure: 1014, radarDbz: 28 },
-  { id: 'shimla', name: 'Shimla Ridge', state: 'HP', region: 'North', x: 36, y: 19, temp: 17, condition: 'Dense Fog & Mountain Mist', rainProb: 60, windSpeed: 14, windDir: 'NE', aqi: 35, humidity: 88, pressure: 1012, radarDbz: 36 },
-  { id: 'jaipur', name: 'Jaipur Pink City', state: 'Rajasthan', region: 'West', x: 33, y: 32, temp: 33, condition: 'Partly Cloudy & Dry', rainProb: 20, windSpeed: 16, windDir: 'W', aqi: 110, humidity: 48, pressure: 1009, radarDbz: 15 },
-  { id: 'lucknow', name: 'Lucknow', state: 'UP', region: 'North', x: 48, y: 32, temp: 30, condition: 'Intense Convective Rain', rainProb: 75, windSpeed: 22, windDir: 'SE', aqi: 95, humidity: 82, pressure: 1007, alert: { level: 'yellow', title: 'Yellow Watch: Lightning Activity', advisory: 'Farmers advised to seek sheltered structures away from tall trees' }, radarDbz: 48 },
-  { id: 'patna', name: 'Patna', state: 'Bihar', region: 'East', x: 58, y: 34, temp: 29, condition: 'Scattered Monsoon Showers', rainProb: 55, windSpeed: 18, windDir: 'E', aqi: 125, humidity: 79, pressure: 1008, radarDbz: 38 },
-  { id: 'kolkata', name: 'Kolkata Delta', state: 'West Bengal', region: 'East', x: 67, y: 44, temp: 31, condition: 'Humid Overcast & Drizzle', rainProb: 65, windSpeed: 24, windDir: 'SW', aqi: 88, humidity: 86, pressure: 1006, radarDbz: 42 },
-  { id: 'guwahati', name: 'Guwahati Brahmaputra', state: 'Assam', region: 'East', x: 78, y: 31, temp: 28, condition: 'Heavy Rain & Gusty squall', rainProb: 70, windSpeed: 20, windDir: 'NE', aqi: 48, humidity: 91, pressure: 1009, alert: { level: 'yellow', title: 'Yellow Alert: Riverine Water Surge', advisory: 'Low-lying riparian banks on caution for swift river rise' }, radarDbz: 46 },
-  { id: 'mumbai', name: 'Mumbai Colaba', state: 'Maharashtra', region: 'West', x: 26, y: 56, temp: 30, condition: 'Passing Monsoon Bands', rainProb: 50, windSpeed: 26, windDir: 'WSW', aqi: 78, humidity: 84, pressure: 1008, radarDbz: 39 },
-  { id: 'pune', name: 'Pune Western Ghats', state: 'Maharashtra', region: 'West', x: 30, y: 60, temp: 27, condition: 'Overcast & Cool Breeze', rainProb: 35, windSpeed: 14, windDir: 'WNW', aqi: 72, humidity: 68, pressure: 1012, radarDbz: 22 },
-  { id: 'hyderabad', name: 'Hyderabad Deccan', state: 'Telangana', region: 'South', x: 42, y: 60, temp: 29, condition: 'Breezy & Intermittent Sun', rainProb: 25, windSpeed: 18, windDir: 'SE', aqi: 82, humidity: 59, pressure: 1011, radarDbz: 18 },
-  { id: 'bengaluru', name: 'Bengaluru IT Corridor', state: 'Karnataka', region: 'South', x: 38, y: 74, temp: 25, condition: 'Pleasant & Cloud Deck', rainProb: 30, windSpeed: 16, windDir: 'SW', aqi: 54, humidity: 64, pressure: 1014, radarDbz: 20 },
-  { id: 'chennai', name: 'Chennai Marina', state: 'Tamil Nadu', region: 'South', x: 48, y: 73, temp: 32, condition: 'Warm & Coastal Sunshine', rainProb: 15, windSpeed: 19, windDir: 'SE', aqi: 68, humidity: 71, pressure: 1010, radarDbz: 12 },
-  { id: 'kochi', name: 'Kochi Harbor', state: 'Kerala', region: 'South', x: 35, y: 84, temp: 29, condition: 'Squally Winds & Rough Swell', rainProb: 95, windSpeed: 42, windDir: 'SSW', aqi: 38, humidity: 92, pressure: 1005, alert: { level: 'red', title: 'RED ALERT: Extreme Marine Squall', advisory: 'Deep sea fishing strictly prohibited; wave swell exceeding 3.4m' }, radarDbz: 58 },
-  { id: 'bhopal', name: 'Bhopal Plateau', state: 'Madhya Pradesh', region: 'Central', x: 40, y: 44, temp: 30, condition: 'Scattered Thunder Clouds', rainProb: 40, windSpeed: 17, windDir: 'W', aqi: 62, humidity: 70, pressure: 1010, radarDbz: 25 },
+const ALL_CITIES: MapCityPoint[] = [
+  // --- INDIA NATIONAL METEOROLOGICAL NETWORK ---
+  { id: 'delhi', name: 'New Delhi (NCR)', countryOrState: 'Delhi, India', scope: 'india', continentOrRegion: 'North', x: 38, y: 26, temp: 31, condition: 'Thunderstorm with Squall', rainProb: 82, windSpeed: 28, windDir: 'ENE', aqi: 142, humidity: 78, pressure: 1008, timeZoneOffset: 'IST (UTC+5:30)', alert: { level: 'orange', title: 'Orange Warning: Heavy Rain & Squall', advisory: 'Peak thunderstorm intensity between 18:30–21:00 IST' }, radarDbz: 52 },
+  { id: 'mumbai', name: 'Mumbai Colaba', countryOrState: 'Maharashtra, India', scope: 'india', continentOrRegion: 'West', x: 26, y: 56, temp: 30, condition: 'Monsoon Showers', rainProb: 50, windSpeed: 26, windDir: 'WSW', aqi: 78, humidity: 84, pressure: 1008, timeZoneOffset: 'IST (UTC+5:30)', radarDbz: 39 },
+  { id: 'bengaluru', name: 'Bengaluru IT Hub', countryOrState: 'Karnataka, India', scope: 'india', continentOrRegion: 'South', x: 38, y: 74, temp: 25, condition: 'Pleasant & Cloud Deck', rainProb: 30, windSpeed: 16, windDir: 'SW', aqi: 54, humidity: 64, pressure: 1014, timeZoneOffset: 'IST (UTC+5:30)', radarDbz: 20 },
+  { id: 'kolkata', name: 'Kolkata Delta', countryOrState: 'West Bengal, India', scope: 'india', continentOrRegion: 'East', x: 67, y: 44, temp: 31, condition: 'Humid Overcast', rainProb: 65, windSpeed: 24, windDir: 'SW', aqi: 88, humidity: 86, pressure: 1006, timeZoneOffset: 'IST (UTC+5:30)', radarDbz: 42 },
+  { id: 'chennai', name: 'Chennai Marina', countryOrState: 'Tamil Nadu, India', scope: 'india', continentOrRegion: 'South', x: 48, y: 73, temp: 32, condition: 'Warm & Coastal Sunshine', rainProb: 15, windSpeed: 19, windDir: 'SE', aqi: 68, humidity: 71, pressure: 1010, timeZoneOffset: 'IST (UTC+5:30)', radarDbz: 12 },
+  { id: 'kochi', name: 'Kochi Harbor', countryOrState: 'Kerala, India', scope: 'india', continentOrRegion: 'South', x: 35, y: 84, temp: 29, condition: 'Squally Winds & Rough Swell', rainProb: 95, windSpeed: 42, windDir: 'SSW', aqi: 38, humidity: 92, pressure: 1005, timeZoneOffset: 'IST (UTC+5:30)', alert: { level: 'red', title: 'RED ALERT: Extreme Marine Squall', advisory: 'Deep sea fishing strictly prohibited; wave swell exceeding 3.4m' }, radarDbz: 58 },
+  { id: 'srinagar', name: 'Srinagar Valley', countryOrState: 'J&K, India', scope: 'india', continentOrRegion: 'North', x: 30, y: 12, temp: 19, condition: 'Mountain Drizzle', rainProb: 45, windSpeed: 12, windDir: 'NW', aqi: 42, humidity: 62, pressure: 1014, timeZoneOffset: 'IST (UTC+5:30)', radarDbz: 28 },
+  { id: 'shimla', name: 'Shimla Ridge', countryOrState: 'HP, India', scope: 'india', continentOrRegion: 'North', x: 36, y: 19, temp: 17, condition: 'Dense Fog & Mist', rainProb: 60, windSpeed: 14, windDir: 'NE', aqi: 35, humidity: 88, pressure: 1012, timeZoneOffset: 'IST (UTC+5:30)', radarDbz: 36 },
+  { id: 'jaipur', name: 'Jaipur', countryOrState: 'Rajasthan, India', scope: 'india', continentOrRegion: 'West', x: 33, y: 32, temp: 33, condition: 'Partly Cloudy & Dry', rainProb: 20, windSpeed: 16, windDir: 'W', aqi: 110, humidity: 48, pressure: 1009, timeZoneOffset: 'IST (UTC+5:30)', radarDbz: 15 },
+  { id: 'guwahati', name: 'Guwahati', countryOrState: 'Assam, India', scope: 'india', continentOrRegion: 'East', x: 78, y: 31, temp: 28, condition: 'Heavy Rain & Gusts', rainProb: 70, windSpeed: 20, windDir: 'NE', aqi: 48, humidity: 91, pressure: 1009, timeZoneOffset: 'IST (UTC+5:30)', alert: { level: 'yellow', title: 'Yellow Alert: Water Surge', advisory: 'Low-lying riparian banks on caution for river rise' }, radarDbz: 46 },
+  { id: 'hyderabad', name: 'Hyderabad', countryOrState: 'Telangana, India', scope: 'india', continentOrRegion: 'South', x: 42, y: 60, temp: 29, condition: 'Breezy & Fair', rainProb: 25, windSpeed: 18, windDir: 'SE', aqi: 82, humidity: 59, pressure: 1011, timeZoneOffset: 'IST (UTC+5:30)', radarDbz: 18 },
+
+  // --- GLOBAL WORLD METEOROLOGICAL NETWORK (WMO) ---
+  // ASIA & MIDDLE EAST
+  { id: 'tokyo', name: 'Tokyo Metropolis', countryOrState: 'Japan', scope: 'world', continentOrRegion: 'Asia-Pacific', x: 84, y: 34, temp: 22, condition: 'Passing Pacific Showers', rainProb: 60, windSpeed: 21, windDir: 'E', aqi: 24, humidity: 72, pressure: 1013, timeZoneOffset: 'JST (UTC+9)', radarDbz: 35 },
+  { id: 'singapore', name: 'Singapore', countryOrState: 'Singapore', scope: 'world', continentOrRegion: 'Asia-Pacific', x: 74, y: 55, temp: 30, condition: 'Equatorial Thunderstorm', rainProb: 80, windSpeed: 18, windDir: 'NE', aqi: 32, humidity: 88, pressure: 1009, timeZoneOffset: 'SGT (UTC+8)', alert: { level: 'yellow', title: 'Lightning Risk Alert', advisory: 'Frequent cloud-to-ground lightning in Marina Bay area' }, radarDbz: 48 },
+  { id: 'dubai', name: 'Dubai', countryOrState: 'United Arab Emirates', scope: 'world', continentOrRegion: 'Middle East & Africa', x: 57, y: 36, temp: 38, condition: 'Sunny & Desert Haze', rainProb: 5, windSpeed: 16, windDir: 'NW', aqi: 118, humidity: 44, pressure: 1008, timeZoneOffset: 'GST (UTC+4)', radarDbz: 10 },
+  { id: 'bangkok', name: 'Bangkok', countryOrState: 'Thailand', scope: 'world', continentOrRegion: 'Asia-Pacific', x: 72, y: 44, temp: 32, condition: 'Tropical Downpour', rainProb: 75, windSpeed: 19, windDir: 'SW', aqi: 62, humidity: 85, pressure: 1007, timeZoneOffset: 'ICT (UTC+7)', radarDbz: 44 },
+
+  // EUROPE
+  { id: 'london', name: 'London', countryOrState: 'United Kingdom', scope: 'world', continentOrRegion: 'Europe', x: 44, y: 22, temp: 16, condition: 'Overcast & Light Drizzle', rainProb: 65, windSpeed: 26, windDir: 'W', aqi: 28, humidity: 81, pressure: 1016, timeZoneOffset: 'BST (UTC+1)', radarDbz: 30 },
+  { id: 'paris', name: 'Paris', countryOrState: 'France', scope: 'world', continentOrRegion: 'Europe', x: 46, y: 25, temp: 18, condition: 'Partly Cloudy & Breeze', rainProb: 35, windSpeed: 18, windDir: 'WNW', aqi: 34, humidity: 66, pressure: 1018, timeZoneOffset: 'CEST (UTC+2)', radarDbz: 20 },
+  { id: 'frankfurt', name: 'Frankfurt', countryOrState: 'Germany', scope: 'world', continentOrRegion: 'Europe', x: 49, y: 23, temp: 17, condition: 'Mild Rain Bands', rainProb: 50, windSpeed: 17, windDir: 'NW', aqi: 22, humidity: 74, pressure: 1017, timeZoneOffset: 'CEST (UTC+2)', radarDbz: 28 },
+  { id: 'moscow', name: 'Moscow', countryOrState: 'Russia', scope: 'world', continentOrRegion: 'Europe', x: 56, y: 17, temp: 11, condition: 'Cold Breezy & Rain', rainProb: 55, windSpeed: 24, windDir: 'NNE', aqi: 19, humidity: 79, pressure: 1020, timeZoneOffset: 'MSK (UTC+3)', radarDbz: 32 },
+
+  // NORTH AMERICA
+  { id: 'newyork', name: 'New York City', countryOrState: 'United States', scope: 'world', continentOrRegion: 'North America', x: 26, y: 29, temp: 21, condition: 'Atlantic Breeze & Sun', rainProb: 20, windSpeed: 22, windDir: 'SSW', aqi: 45, humidity: 55, pressure: 1015, timeZoneOffset: 'EDT (UTC-4)', radarDbz: 14 },
+  { id: 'sanfrancisco', name: 'San Francisco', countryOrState: 'United States', scope: 'world', continentOrRegion: 'North America', x: 12, y: 31, temp: 17, condition: 'Coastal Marine Fog', rainProb: 15, windSpeed: 28, windDir: 'W', aqi: 36, humidity: 82, pressure: 1014, timeZoneOffset: 'PDT (UTC-7)', radarDbz: 18 },
+  { id: 'chicago', name: 'Chicago (Windy City)', countryOrState: 'United States', scope: 'world', continentOrRegion: 'North America', x: 21, y: 28, temp: 19, condition: 'Lake Breeze & Clouds', rainProb: 30, windSpeed: 32, windDir: 'NE', aqi: 52, humidity: 62, pressure: 1017, timeZoneOffset: 'CDT (UTC-5)', radarDbz: 22 },
+  { id: 'miami', name: 'Miami Coast', countryOrState: 'United States', scope: 'world', continentOrRegion: 'North America', x: 24, y: 40, temp: 31, condition: 'Tropical Squalls', rainProb: 70, windSpeed: 29, windDir: 'ESE', aqi: 28, humidity: 84, pressure: 1010, timeZoneOffset: 'EDT (UTC-4)', alert: { level: 'yellow', title: 'Rip Current & Storm Advisory', advisory: 'Rough surf and coastal rain cells' }, radarDbz: 42 },
+
+  // SOUTH AMERICA & OCEANIA & AFRICA
+  { id: 'saopaulo', name: 'São Paulo', countryOrState: 'Brazil', scope: 'world', continentOrRegion: 'South America', x: 33, y: 72, temp: 24, condition: 'Scattered Showers', rainProb: 60, windSpeed: 17, windDir: 'SE', aqi: 65, humidity: 76, pressure: 1018, timeZoneOffset: 'BRT (UTC-3)', radarDbz: 32 },
+  { id: 'cairo', name: 'Cairo Nile', countryOrState: 'Egypt', scope: 'world', continentOrRegion: 'Middle East & Africa', x: 51, y: 34, temp: 33, condition: 'Clear Sky & Heat', rainProb: 0, windSpeed: 19, windDir: 'NNW', aqi: 112, humidity: 38, pressure: 1012, timeZoneOffset: 'EEST (UTC+3)', radarDbz: 5 },
+  { id: 'sydney', name: 'Sydney Harbor', countryOrState: 'Australia', scope: 'world', continentOrRegion: 'Oceania', x: 88, y: 77, temp: 20, condition: 'Sunny & Crisp Breeze', rainProb: 15, windSpeed: 25, windDir: 'S', aqi: 18, humidity: 58, pressure: 1021, timeZoneOffset: 'AEST (UTC+10)', radarDbz: 12 },
+  { id: 'nairobi', name: 'Nairobi', countryOrState: 'Kenya', scope: 'world', continentOrRegion: 'Middle East & Africa', x: 53, y: 55, temp: 25, condition: 'Highland Mild Sun', rainProb: 30, windSpeed: 14, windDir: 'E', aqi: 29, humidity: 60, pressure: 1016, timeZoneOffset: 'EAT (UTC+3)', radarDbz: 20 },
 ];
 
 const TIME_STEPS = [
-  { label: '-2h', title: '2 Hours Ago (Observed)' },
-  { label: '-1h', title: '1 Hour Ago (Observed)' },
-  { label: 'Now', title: 'Live Doppler Radar (Current)' },
-  { label: '+1h', title: '+1 Hour Nowcast (WRF)' },
-  { label: '+2h', title: '+2 Hours Nowcast (WRF)' },
+  { label: '-2h', title: '2 Hours Ago' },
+  { label: '-1h', title: '1 Hour Ago' },
+  { label: 'Live', title: 'Live Composite Feed' },
+  { label: '+1h', title: '+1h Nowcast' },
+  { label: '+2h', title: '+2h Forecast' },
 ];
 
 export const MapScreen: React.FC = () => {
@@ -63,21 +86,24 @@ export const MapScreen: React.FC = () => {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 840;
 
+  // Scope: 'india' vs 'world'
+  const [mapScope, setMapScope] = useState<'india' | 'world'>('india');
+  
   // Layer state
-  const [activeLayer, setActiveLayer] = useState<'radar' | 'wind' | 'temp' | 'aqi' | 'alerts' | 'satellite'>('radar');
-  const [selectedCity, setSelectedCity] = useState<CityPoint>(INDIAN_CITIES[0]);
+  const [activeLayer, setActiveLayer] = useState<'radar' | 'wind' | 'temp' | 'aqi' | 'alerts' | 'jetstream'>('radar');
+  const [selectedCity, setSelectedCity] = useState<MapCityPoint>(ALL_CITIES[0]);
   const [selectedRegion, setSelectedRegion] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
   
-  // Interactive zoom & pan scale
+  // Zoom & Pan
   const [zoomLevel, setZoomLevel] = useState<number>(1);
   
   // Radar timeline player
-  const [timeStepIndex, setTimeStepIndex] = useState<number>(2); // 2 is 'Now'
+  const [timeStepIndex, setTimeStepIndex] = useState<number>(2); // 2 is 'Live'
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [expandedDetails, setExpandedDetails] = useState<boolean>(false);
 
-  // Playback timer loop
+  // Auto timeline loop
   useEffect(() => {
     let interval: any = null;
     if (isPlaying) {
@@ -90,37 +116,84 @@ export const MapScreen: React.FC = () => {
     };
   }, [isPlaying]);
 
-  // Filter cities by region & search
-  const filteredCities = INDIAN_CITIES.filter((city) => {
-    const matchesRegion = selectedRegion === 'All' || city.region === selectedRegion;
-    const matchesSearch = city.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          city.state.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesRegion && matchesSearch;
+  // Adjust default city and region when scope changes
+  const handleScopeChange = (newScope: 'india' | 'world') => {
+    setMapScope(newScope);
+    setSelectedRegion('All');
+    setZoomLevel(1);
+    if (newScope === 'world') {
+      setSelectedCity(ALL_CITIES.find(c => c.id === 'london') || ALL_CITIES[0]);
+    } else {
+      setSelectedCity(ALL_CITIES.find(c => c.id === 'delhi') || ALL_CITIES[0]);
+    }
+  };
+
+  // Regions options based on active scope
+  const regionOptions = mapScope === 'india'
+    ? ['All', 'North', 'West', 'South', 'East']
+    : ['All', 'Asia-Pacific', 'Europe', 'North America', 'Middle East & Africa', 'South America', 'Oceania'];
+
+  // Filter cities by scope, region, and search query
+  const filteredCities = ALL_CITIES.filter((city) => {
+    const matchesScope = city.scope === mapScope;
+    const matchesRegion = selectedRegion === 'All' || city.continentOrRegion === selectedRegion;
+    const matchesSearch = searchQuery === '' || 
+      city.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      city.countryOrState.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesScope && matchesRegion && matchesSearch;
   });
 
-  const layers: { key: 'radar' | 'wind' | 'temp' | 'aqi' | 'alerts' | 'satellite'; label: string; icon: any; legend: string }[] = [
-    { key: 'radar', label: 'Doppler Radar', icon: 'weather-pouring', legend: 'Precipitation Reflectivity (dBZ)' },
-    { key: 'wind', label: 'Wind Flow & Squalls', icon: 'weather-windy', legend: 'Velocity (km/h & direction)' },
-    { key: 'temp', label: 'Thermal Heatmap', icon: 'thermometer', legend: 'Surface Ambient Temperature (°C)' },
-    { key: 'aqi', label: 'Air Quality (AQI)', icon: 'air-filter', legend: 'CPCB AQI & Particulate Index' },
-    { key: 'alerts', label: 'Warning Zones', icon: 'alert-rhombus', legend: 'IMD Multi-Hazard Disaster Alerts' },
-    { key: 'satellite', label: 'INSAT-3DR Multispectral', icon: 'satellite-variant', legend: 'Cloud Top Radiance (Thermal IR)' },
+  const layers = [
+    { key: 'radar', label: 'Doppler Radar (dBZ)', icon: 'weather-pouring', legend: 'Precipitation Reflectivity (dBZ)' },
+    { key: 'wind', label: 'Global Wind & Jet Streams', icon: 'weather-windy', legend: 'Atmospheric Wind Vectors' },
+    { key: 'temp', label: 'Thermal Heatmap (°C)', icon: 'thermometer', legend: 'Surface Ambient Temperature' },
+    { key: 'aqi', label: 'Air Quality (AQI)', icon: 'air-filter', legend: 'Air Quality Index & Particulates' },
+    { key: 'alerts', label: 'Cyclone & Hazard Zones', icon: 'alert-rhombus', legend: 'WMO & IMD Disaster Alerts' },
   ];
 
   const currentLayerObj = layers.find(l => l.key === activeLayer) || layers[0];
-
-  // Dynamic cloud offset for timeline player
-  const timeOffset = (timeStepIndex - 2) * 12;
+  const timeOffset = (timeStepIndex - 2) * 10;
 
   return (
     <View style={styles.container}>
-      {/* Search & Top Action Bar */}
-      <View style={[styles.topActionBar, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
+      {/* 🌍 / 🇮🇳 Primary Scope Switcher Bar */}
+      <View style={[styles.scopeBar, { backgroundColor: theme.surfaceSubtle, borderBottomColor: theme.border }]}>
+        <View style={styles.scopeButtonsRow}>
+          <TouchableOpacity
+            style={[
+              styles.scopeBtn,
+              mapScope === 'india' && { backgroundColor: theme.primary, borderColor: theme.primary }
+            ]}
+            onPress={() => handleScopeChange('india')}
+          >
+            <Text style={[styles.scopeBtnFlag]}>🇮🇳</Text>
+            <Text style={[styles.scopeBtnText, { color: mapScope === 'india' ? '#FFFFFF' : theme.textPrimary, fontWeight: mapScope === 'india' ? '800' : '600' }]}>
+              India National Radar (IMD)
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.scopeBtn,
+              mapScope === 'world' && { backgroundColor: theme.primary, borderColor: theme.primary }
+            ]}
+            onPress={() => handleScopeChange('world')}
+          >
+            <Text style={[styles.scopeBtnFlag]}>🌍</Text>
+            <Text style={[styles.scopeBtnText, { color: mapScope === 'world' ? '#FFFFFF' : theme.textPrimary, fontWeight: mapScope === 'world' ? '800' : '600' }]}>
+              All Over The World Map (WMO Global)
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Search & Regional Filter Bar */}
+      <View style={[styles.searchFilterBar, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
         <View style={styles.searchRow}>
           <Ionicons name="search" size={16} color={theme.textMuted} />
           <TextInput
             style={[styles.searchInput, { color: theme.textPrimary }]}
-            placeholder="Search state, district, or Indian city..."
+            placeholder={mapScope === 'india' ? "Search Indian state, city or district..." : "Search global city, country (e.g. London, Tokyo, New York)..."}
             placeholderTextColor={theme.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -134,7 +207,7 @@ export const MapScreen: React.FC = () => {
 
         {/* Region Filter Chips */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.regionScroll}>
-          {['All', 'North', 'West', 'South', 'East', 'Central'].map((r) => {
+          {regionOptions.map((r) => {
             const isSel = selectedRegion === r;
             return (
               <TouchableOpacity
@@ -149,7 +222,7 @@ export const MapScreen: React.FC = () => {
                 onPress={() => setSelectedRegion(r)}
               >
                 <Text style={[styles.regionChipText, { color: isSel ? '#FFFFFF' : theme.textPrimary, fontWeight: isSel ? '700' : '500' }]}>
-                  {r === 'All' ? '🇮🇳 All India' : r}
+                  {r === 'All' ? (mapScope === 'india' ? 'All India' : 'Whole Globe') : r}
                 </Text>
               </TouchableOpacity>
             );
@@ -157,7 +230,7 @@ export const MapScreen: React.FC = () => {
         </ScrollView>
       </View>
 
-      {/* Weather Layer Switcher Chips */}
+      {/* Layer Switcher Bar */}
       <View style={[styles.layerBar, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.layerScroll}>
           {layers.map((l) => {
@@ -172,11 +245,11 @@ export const MapScreen: React.FC = () => {
                     borderColor: isSelected ? theme.primary : theme.border,
                   }
                 ]}
-                onPress={() => setActiveLayer(l.key)}
+                onPress={() => setActiveLayer(l.key as any)}
               >
                 <MaterialCommunityIcons 
-                  name={l.icon} 
-                  size={15} 
+                  name={l.icon as any} 
+                  size={14} 
                   color={isSelected ? '#FFFFFF' : theme.textSecondary} 
                 />
                 <Text style={[styles.layerChipText, { color: isSelected ? '#FFFFFF' : theme.textPrimary, fontWeight: isSelected ? '700' : '500' }]}>
@@ -188,143 +261,107 @@ export const MapScreen: React.FC = () => {
         </ScrollView>
       </View>
 
-      {/* Main Geospatial Map Canvas Area */}
+      {/* Main Map Viewport */}
       <View style={[styles.mapCanvas, { backgroundColor: theme.background }]}>
-        {/* Map Grid & Longitude/Latitude Coordinates */}
+        {/* Coordinates Grid Overlay */}
         <View style={styles.gridOverlay}>
-          <View style={[styles.latLine, { top: '20%', borderColor: theme.borderLight }]}>
-            <Text style={[styles.coordTag, { color: theme.textMuted }]}>28°N (Delhi)</Text>
-          </View>
-          <View style={[styles.latLine, { top: '45%', borderColor: theme.borderLight }]}>
-            <Text style={[styles.coordTag, { color: theme.textMuted }]}>22°N (Tropic of Cancer)</Text>
-          </View>
-          <View style={[styles.latLine, { top: '70%', borderColor: theme.borderLight }]}>
-            <Text style={[styles.coordTag, { color: theme.textMuted }]}>13°N (Bengaluru/Chennai)</Text>
-          </View>
-          <View style={[styles.latLine, { top: '88%', borderColor: theme.borderLight }]}>
-            <Text style={[styles.coordTag, { color: theme.textMuted }]}>8°N (Kanyakumari / Indian Ocean)</Text>
-          </View>
-          <View style={[styles.lonLine, { left: '30%', borderColor: theme.borderLight }]} />
-          <View style={[styles.lonLine, { left: '55%', borderColor: theme.borderLight }]} />
-          <View style={[styles.lonLine, { left: '80%', borderColor: theme.borderLight }]} />
+          {mapScope === 'india' ? (
+            <>
+              <View style={[styles.latLine, { top: '20%', borderColor: theme.borderLight }]}>
+                <Text style={[styles.coordTag, { color: theme.textMuted }]}>28°N (Delhi)</Text>
+              </View>
+              <View style={[styles.latLine, { top: '45%', borderColor: theme.borderLight }]}>
+                <Text style={[styles.coordTag, { color: theme.textMuted }]}>22°N (Tropic of Cancer)</Text>
+              </View>
+              <View style={[styles.latLine, { top: '70%', borderColor: theme.borderLight }]}>
+                <Text style={[styles.coordTag, { color: theme.textMuted }]}>13°N (Bengaluru/Chennai)</Text>
+              </View>
+            </>
+          ) : (
+            <>
+              <View style={[styles.latLine, { top: '22%', borderColor: theme.borderLight }]}>
+                <Text style={[styles.coordTag, { color: theme.textMuted }]}>50°N (London / Frankfurt)</Text>
+              </View>
+              <View style={[styles.latLine, { top: '35%', borderColor: theme.borderLight }]}>
+                <Text style={[styles.coordTag, { color: theme.textMuted }]}>23.5°N (Tropic of Cancer)</Text>
+              </View>
+              <View style={[styles.latLine, { top: '50%', borderColor: theme.borderLight }]}>
+                <Text style={[styles.coordTag, { color: theme.textMuted }]}>0° (Equator / ITCZ Rain Belt)</Text>
+              </View>
+              <View style={[styles.latLine, { top: '70%', borderColor: theme.borderLight }]}>
+                <Text style={[styles.coordTag, { color: theme.textMuted }]}>23.5°S (Tropic of Capricorn)</Text>
+              </View>
+              <View style={[styles.lonLine, { left: '25%', borderColor: theme.borderLight }]}>
+                <Text style={[styles.lonTag, { color: theme.textMuted }]}>75°W (New York)</Text>
+              </View>
+              <View style={[styles.lonLine, { left: '46%', borderColor: theme.borderLight }]}>
+                <Text style={[styles.lonTag, { color: theme.textMuted }]}>0° (Greenwich GMT)</Text>
+              </View>
+              <View style={[styles.lonLine, { left: '80%', borderColor: theme.borderLight }]}>
+                <Text style={[styles.lonTag, { color: theme.textMuted }]}>140°E (Tokyo)</Text>
+              </View>
+            </>
+          )}
         </View>
 
-        {/* Dynamic Zoom & Pan Container */}
+        {/* Dynamic Zoom Container */}
         <View style={[styles.zoomContainer, { transform: [{ scale: zoomLevel }] }]}>
-          {/* Layer Overlay: Doppler Radar Rain Reflectivity Bands */}
+          {/* Atmospheric Layer Overlays */}
           {activeLayer === 'radar' && (
             <>
-              {/* Northern Convective Storm Cell (Delhi-NCR / Haryana) */}
-              <View 
-                style={[
-                  styles.radarCloud, 
-                  { 
-                    left: `${30 + timeOffset * 0.4}%`, 
-                    top: `${19 - timeOffset * 0.2}%`, 
-                    width: 170, 
-                    height: 120, 
-                    backgroundColor: 'rgba(239, 68, 68, 0.4)' 
-                  }
-                ]} 
-              >
-                <View style={styles.radarCore} />
-              </View>
-
-              {/* Kerala / Arabian Sea High Squall Cell */}
-              <View 
-                style={[
-                  styles.radarCloud, 
-                  { 
-                    left: `${26 + timeOffset * 0.3}%`, 
-                    top: `${76 - timeOffset * 0.2}%`, 
-                    width: 150, 
-                    height: 110, 
-                    backgroundColor: 'rgba(220, 38, 38, 0.45)' 
-                  }
-                ]} 
-              />
-
-              {/* Eastern Gangetic Monsoon Trough (UP / Bihar / Bengal) */}
-              <View 
-                style={[
-                  styles.radarCloud, 
-                  { 
-                    left: `${48 + timeOffset * 0.5}%`, 
-                    top: `${28 - timeOffset * 0.1}%`, 
-                    width: 220, 
-                    height: 140, 
-                    backgroundColor: 'rgba(2, 132, 199, 0.35)' 
-                  }
-                ]} 
-              />
+              {mapScope === 'india' ? (
+                <>
+                  <View style={[styles.radarCloud, { left: `${30 + timeOffset * 0.4}%`, top: `${19 - timeOffset * 0.2}%`, width: 170, height: 120, backgroundColor: 'rgba(239, 68, 68, 0.4)' }]} />
+                  <View style={[styles.radarCloud, { left: `${26 + timeOffset * 0.3}%`, top: `${76 - timeOffset * 0.2}%`, width: 150, height: 110, backgroundColor: 'rgba(220, 38, 38, 0.45)' }]} />
+                  <View style={[styles.radarCloud, { left: `${48 + timeOffset * 0.5}%`, top: `${28 - timeOffset * 0.1}%`, width: 220, height: 140, backgroundColor: 'rgba(2, 132, 199, 0.35)' }]} />
+                </>
+              ) : (
+                <>
+                  {/* Global Intertropical Convergence Zone (ITCZ) Rain Belt */}
+                  <View style={[styles.globalRainBand, { top: '48%', left: '15%', right: '15%', height: 28, backgroundColor: 'rgba(2, 132, 199, 0.25)' }]}>
+                    <Text style={styles.globalBandText}>Intertropical Convergence Zone (ITCZ) Deep Convection</Text>
+                  </View>
+                  {/* Western Pacific Typhoon Radar Cell */}
+                  <View style={[styles.radarCloud, { left: '72%', top: '40%', width: 160, height: 120, backgroundColor: 'rgba(239, 68, 68, 0.45)' }]} />
+                  {/* North Atlantic Low Pressure System */}
+                  <View style={[styles.radarCloud, { left: '38%', top: '20%', width: 140, height: 100, backgroundColor: 'rgba(2, 132, 199, 0.35)' }]} />
+                </>
+              )}
             </>
           )}
 
-          {/* Layer Overlay: Wind Flow Vectors */}
           {activeLayer === 'wind' && (
             <>
-              <View style={[styles.windVectorBox, { left: '20%', top: '75%' }]}>
-                <Ionicons name="arrow-up" size={24} color="#38BDF8" style={{ transform: [{ rotate: '35deg' }] }} />
-                <Text style={styles.windVectorText}>42 km/h SSW</Text>
-              </View>
-              <View style={[styles.windVectorBox, { left: '32%', top: '22%' }]}>
-                <Ionicons name="arrow-down" size={24} color="#F97316" style={{ transform: [{ rotate: '-45deg' }] }} />
-                <Text style={styles.windVectorText}>28 km/h ENE</Text>
-              </View>
-              <View style={[styles.windVectorBox, { left: '60%', top: '40%' }]}>
-                <Ionicons name="arrow-up" size={24} color="#38BDF8" style={{ transform: [{ rotate: '55deg' }] }} />
-                <Text style={styles.windVectorText}>24 km/h SW</Text>
-              </View>
+              {mapScope === 'world' ? (
+                <>
+                  <View style={[styles.jetStreamBox, { top: '24%', left: '15%', width: '70%' }]}>
+                    <Text style={styles.jetStreamText}>✈️ Polar Jet Stream: 210 km/h West-to-East Flow</Text>
+                  </View>
+                  <View style={[styles.windVectorBox, { left: '22%', top: '28%' }]}>
+                    <Ionicons name="arrow-forward" size={20} color="#38BDF8" />
+                    <Text style={styles.windVectorText}>32 km/h W</Text>
+                  </View>
+                  <View style={[styles.windVectorBox, { left: '76%', top: '34%' }]}>
+                    <Ionicons name="arrow-up" size={20} color="#F97316" style={{ transform: [{ rotate: '45deg' }] }} />
+                    <Text style={styles.windVectorText}>24 km/h SW</Text>
+                  </View>
+                </>
+              ) : (
+                <>
+                  <View style={[styles.windVectorBox, { left: '20%', top: '75%' }]}>
+                    <Ionicons name="arrow-up" size={20} color="#38BDF8" style={{ transform: [{ rotate: '35deg' }] }} />
+                    <Text style={styles.windVectorText}>42 km/h SSW</Text>
+                  </View>
+                  <View style={[styles.windVectorBox, { left: '32%', top: '22%' }]}>
+                    <Ionicons name="arrow-down" size={20} color="#F97316" style={{ transform: [{ rotate: '-45deg' }] }} />
+                    <Text style={styles.windVectorText}>28 km/h ENE</Text>
+                  </View>
+                </>
+              )}
             </>
           )}
 
-          {/* Layer Overlay: Thermal Heatmap */}
-          {activeLayer === 'temp' && (
-            <>
-              <View style={[styles.thermalBand, { left: '25%', top: '28%', width: 180, height: 120, backgroundColor: 'rgba(245, 158, 11, 0.25)' }]}>
-                <Text style={styles.thermalText}>Warm Plains (31–33°C)</Text>
-              </View>
-              <View style={[styles.thermalBand, { left: '28%', top: '10%', width: 140, height: 80, backgroundColor: 'rgba(56, 189, 248, 0.25)' }]}>
-                <Text style={styles.thermalText}>Himalayan Valley (17–19°C)</Text>
-              </View>
-            </>
-          )}
-
-          {/* Layer Overlay: Air Quality (AQI) */}
-          {activeLayer === 'aqi' && (
-            <>
-              <View style={[styles.aqiPolygon, { left: '34%', top: '24%', width: 130, height: 90, backgroundColor: 'rgba(249, 115, 22, 0.3)', borderColor: '#F97316' }]}>
-                <Text style={styles.aqiPolygonText}>AQI 142 (Moderate/Poor)</Text>
-              </View>
-              <View style={[styles.aqiPolygon, { left: '32%', top: '70%', width: 120, height: 100, backgroundColor: 'rgba(34, 197, 94, 0.25)', borderColor: '#22C55E' }]}>
-                <Text style={styles.aqiPolygonText}>AQI 38 (Good / Marine)</Text>
-              </View>
-            </>
-          )}
-
-          {/* Layer Overlay: Severe IMD Alert Zones */}
-          {activeLayer === 'alerts' && (
-            <>
-              <View style={[styles.alertZone, { left: '29%', top: '21%', borderColor: '#EA580C', backgroundColor: 'rgba(234, 88, 12, 0.25)' }]}>
-                <MaterialCommunityIcons name="alert" size={16} color="#EA580C" />
-                <Text style={styles.alertZoneText}>ORANGE WARNING: Convective Squall</Text>
-              </View>
-              <View style={[styles.alertZone, { left: '24%', top: '78%', borderColor: '#DC2626', backgroundColor: 'rgba(220, 38, 38, 0.28)' }]}>
-                <MaterialCommunityIcons name="alert-octagon" size={16} color="#DC2626" />
-                <Text style={[styles.alertZoneText, { color: '#DC2626' }]}>RED ALERT: INCOIS Sea Squall (3.4m Swell)</Text>
-              </View>
-            </>
-          )}
-
-          {/* Layer Overlay: INSAT-3DR Satellite Cloud Tops */}
-          {activeLayer === 'satellite' && (
-            <>
-              <View style={[styles.satelliteCloud, { left: '25%', top: '18%', width: 260, height: 170 }]} />
-              <View style={[styles.satelliteCloud, { left: '20%', top: '65%', width: 220, height: 180 }]} />
-            </>
-          )}
-
-          {/* Interactive Indian City Markers */}
+          {/* Interactive City Nodes (India or Global) */}
           {filteredCities.map((city) => {
             const isSelected = selectedCity.id === city.id;
             return (
@@ -364,7 +401,7 @@ export const MapScreen: React.FC = () => {
           })}
         </View>
 
-        {/* Floating Zoom & Map Controls (Top-Right) */}
+        {/* Floating Zoom & Map Controls */}
         <View style={styles.floatingControls}>
           <TouchableOpacity 
             style={[styles.floatingBtn, { backgroundColor: theme.surface, borderColor: theme.border }]}
@@ -389,34 +426,15 @@ export const MapScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Legend Scale Card (Top-Left) */}
+        {/* Legend Scale Card */}
         <View style={[styles.legendBox, { backgroundColor: theme.surface + 'EE', borderColor: theme.border }]}>
           <Text style={[styles.legendTitle, { color: theme.textPrimary }]}>{currentLayerObj.legend}</Text>
-          {activeLayer === 'radar' && (
-            <View style={styles.scaleBarRow}>
-              <View style={[styles.scaleBlock, { backgroundColor: '#86EFAC' }]}><Text style={styles.scaleText}>15</Text></View>
-              <View style={[styles.scaleBlock, { backgroundColor: '#38BDF8' }]}><Text style={styles.scaleText}>30</Text></View>
-              <View style={[styles.scaleBlock, { backgroundColor: '#FACC15' }]}><Text style={styles.scaleText}>45</Text></View>
-              <View style={[styles.scaleBlock, { backgroundColor: '#F97316' }]}><Text style={styles.scaleText}>55</Text></View>
-              <View style={[styles.scaleBlock, { backgroundColor: '#EF4444' }]}><Text style={styles.scaleText}>65 dBZ</Text></View>
-            </View>
-          )}
-          {activeLayer === 'temp' && (
-            <View style={styles.scaleBarRow}>
-              <View style={[styles.scaleBlock, { backgroundColor: '#93C5FD' }]}><Text style={styles.scaleText}>15°C</Text></View>
-              <View style={[styles.scaleBlock, { backgroundColor: '#FDE047' }]}><Text style={styles.scaleText}>25°C</Text></View>
-              <View style={[styles.scaleBlock, { backgroundColor: '#FB923C' }]}><Text style={styles.scaleText}>35°C</Text></View>
-              <View style={[styles.scaleBlock, { backgroundColor: '#DC2626' }]}><Text style={styles.scaleText}>45°C</Text></View>
-            </View>
-          )}
-          {activeLayer === 'aqi' && (
-            <View style={styles.scaleBarRow}>
-              <View style={[styles.scaleBlock, { backgroundColor: '#22C55E' }]}><Text style={styles.scaleText}>Good</Text></View>
-              <View style={[styles.scaleBlock, { backgroundColor: '#EAB308' }]}><Text style={styles.scaleText}>Mod</Text></View>
-              <View style={[styles.scaleBlock, { backgroundColor: '#F97316' }]}><Text style={styles.scaleText}>Poor</Text></View>
-              <View style={[styles.scaleBlock, { backgroundColor: '#EF4444' }]}><Text style={styles.scaleText}>Severe</Text></View>
-            </View>
-          )}
+          <View style={styles.scaleBarRow}>
+            <View style={[styles.scaleBlock, { backgroundColor: '#86EFAC' }]}><Text style={styles.scaleText}>Low</Text></View>
+            <View style={[styles.scaleBlock, { backgroundColor: '#38BDF8' }]}><Text style={styles.scaleText}>Mod</Text></View>
+            <View style={[styles.scaleBlock, { backgroundColor: '#FACC15' }]}><Text style={styles.scaleText}>High</Text></View>
+            <View style={[styles.scaleBlock, { backgroundColor: '#EF4444' }]}><Text style={styles.scaleText}>Severe</Text></View>
+          </View>
         </View>
 
         {/* Timeline Radar Player Bar */}
@@ -459,6 +477,9 @@ export const MapScreen: React.FC = () => {
             <View style={{ flex: 1 }}>
               <View style={styles.telemetryTitleRow}>
                 <Text style={[styles.telemetryCity, { color: theme.textPrimary }]}>{selectedCity.name}</Text>
+                <View style={[styles.timeZoneBadge, { backgroundColor: theme.primaryLight }]}>
+                  <Text style={[styles.timeZoneText, { color: theme.primary }]}>{selectedCity.timeZoneOffset}</Text>
+                </View>
                 {selectedCity.alert && (
                   <View style={[styles.alertPill, { backgroundColor: selectedCity.alert.level === 'red' ? theme.alertRedBg : theme.alertOrangeBg }]}>
                     <Text style={[styles.alertPillText, { color: selectedCity.alert.level === 'red' ? theme.alertRed : theme.alertOrange }]}>
@@ -468,7 +489,7 @@ export const MapScreen: React.FC = () => {
                 )}
               </View>
               <Text style={[styles.telemetrySub, { color: theme.textSecondary }]}>
-                {selectedCity.state} • {selectedCity.condition}
+                {selectedCity.countryOrState} • {selectedCity.condition}
               </Text>
             </View>
 
@@ -498,7 +519,7 @@ export const MapScreen: React.FC = () => {
             </View>
           </View>
 
-          {/* Active IMD Warning Advisory */}
+          {/* Active Hazard Advisory */}
           {selectedCity.alert && (
             <View style={[styles.cityAdvisoryBox, { backgroundColor: selectedCity.alert.level === 'red' ? theme.alertRedBg : theme.alertOrangeBg, borderColor: selectedCity.alert.level === 'red' ? theme.alertRed : theme.alertOrange }]}>
               <MaterialCommunityIcons name="shield-alert-outline" size={16} color={selectedCity.alert.level === 'red' ? theme.alertRed : theme.alertOrange} />
@@ -519,7 +540,7 @@ export const MapScreen: React.FC = () => {
             onPress={() => setExpandedDetails(!expandedDetails)}
           >
             <Text style={[styles.expandBtnText, { color: theme.primary }]}>
-              {expandedDetails ? 'Hide Deep Radar Telemetry' : 'View Deep Mesonet Telemetry'}
+              {expandedDetails ? 'Hide Deep Meteorological Telemetry' : 'View Deep Meteorological Telemetry'}
             </Text>
             <Ionicons name={expandedDetails ? 'chevron-up' : 'chevron-down'} size={14} color={theme.primary} />
           </TouchableOpacity>
@@ -530,10 +551,10 @@ export const MapScreen: React.FC = () => {
                 • Barometric Pressure: <Text style={{ color: theme.textPrimary, fontWeight: '700' }}>{selectedCity.pressure} hPa</Text>
               </Text>
               <Text style={[styles.drawerItem, { color: theme.textSecondary }]}>
-                • Doppler Sweep Elevation: <Text style={{ color: theme.textPrimary, fontWeight: '700' }}>0.5° & 1.5° Composite</Text>
+                • Observation Network: <Text style={{ color: theme.textPrimary, fontWeight: '700' }}>{selectedCity.scope === 'india' ? 'IMD Mesonet Radar Grid' : 'WMO World Weather Watch (WWW)'}</Text>
               </Text>
               <Text style={[styles.drawerItem, { color: theme.textSecondary }]}>
-                • Ground Station: <Text style={{ color: theme.textPrimary, fontWeight: '700' }}>IMD {selectedCity.name} AWS Mesonet</Text>
+                • Time Zone & Radiance: <Text style={{ color: theme.textPrimary, fontWeight: '700' }}>{selectedCity.timeZoneOffset} • Top-of-Atmosphere Albedo: Normal</Text>
               </Text>
             </View>
           )}
@@ -547,7 +568,32 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  topActionBar: {
+  scopeBar: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+  },
+  scopeButtonsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  scopeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: radii.full,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  scopeBtnFlag: {
+    fontSize: 14,
+  },
+  scopeBtnText: {
+    fontSize: 11,
+  },
+  searchFilterBar: {
     paddingHorizontal: spacing.md,
     paddingTop: spacing.xs,
     paddingBottom: spacing.xs,
@@ -630,6 +676,12 @@ const styles = StyleSheet.create({
     borderLeftWidth: 1,
     borderStyle: 'dashed',
     opacity: 0.35,
+    paddingTop: 8,
+    paddingLeft: 4,
+  },
+  lonTag: {
+    fontSize: 8,
+    fontWeight: '600',
   },
   zoomContainer: {
     ...StyleSheet.absoluteFillObject,
@@ -639,20 +691,37 @@ const styles = StyleSheet.create({
     borderRadius: 80,
     filter: 'blur(20px)',
   },
-  radarCore: {
+  globalRainBand: {
     position: 'absolute',
-    top: '30%',
-    left: '30%',
-    width: '40%',
-    height: '40%',
-    backgroundColor: '#7F1D1D',
-    borderRadius: 30,
-    filter: 'blur(10px)',
+    borderRadius: radii.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  globalBandText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#0284C7',
+  },
+  jetStreamBox: {
+    position: 'absolute',
+    backgroundColor: 'rgba(56, 189, 248, 0.2)',
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: '#38BDF8',
+    borderStyle: 'dashed',
+  },
+  jetStreamText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#0284C7',
+    textAlign: 'center',
   },
   windVectorBox: {
     position: 'absolute',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(0,0,0,0.65)',
     paddingHorizontal: 6,
     paddingVertical: 4,
     borderRadius: radii.md,
@@ -662,53 +731,6 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: '700',
     marginTop: 2,
-  },
-  thermalBand: {
-    position: 'absolute',
-    borderRadius: 60,
-    filter: 'blur(22px)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  thermalText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#0F172A',
-  },
-  aqiPolygon: {
-    position: 'absolute',
-    borderRadius: radii.xl,
-    borderWidth: 1.5,
-    borderStyle: 'dashed',
-    padding: 6,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  aqiPolygonText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  alertZone: {
-    position: 'absolute',
-    padding: 8,
-    borderRadius: radii.lg,
-    borderWidth: 1.5,
-    borderStyle: 'dashed',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  alertZoneText: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: '#EA580C',
-  },
-  satelliteCloud: {
-    position: 'absolute',
-    backgroundColor: 'rgba(255, 255, 255, 0.35)',
-    borderRadius: 90,
-    filter: 'blur(30px)',
   },
   cityPin: {
     position: 'absolute',
@@ -777,7 +799,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   scaleBlock: {
-    paddingHorizontal: 5,
+    paddingHorizontal: 6,
     paddingVertical: 2,
     alignItems: 'center',
   },
@@ -844,7 +866,7 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
   },
   desktopTelemetry: {
-    maxWidth: 520,
+    maxWidth: 540,
     left: spacing.xl,
   },
   telemetryHeader: {
@@ -856,9 +878,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flexWrap: 'wrap',
   },
   telemetryCity: {
     fontSize: 15,
+    fontWeight: '800',
+  },
+  timeZoneBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  timeZoneText: {
+    fontSize: 9,
     fontWeight: '800',
   },
   alertPill: {

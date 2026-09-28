@@ -103,25 +103,40 @@ export interface ContributingFactor {
   description: string;
 }
 
+export interface ActionChecklistItem {
+  id: string;
+  task: string;
+  completed?: boolean;
+}
+
 export interface WeatherImpactAnalysis {
   impactScore: number; // 0-100
   impactLevel: 'Low' | 'Moderate' | 'High' | 'Severe';
+  severityBadge: string;
   summary: string;
   weatherFact: string;
   userImpact: string;
   suggestedAction: string;
+  actionChecklist: ActionChecklistItem[];
   contributingFactors: ContributingFactor[];
   explanation: string;
 }
 
 export interface WhatIfScenario {
-  departureLabel: string; // e.g. "Leave Now (6:00 PM)", "Leave at 7:00 PM", "Leave Tomorrow Morning"
+  slotKey: string;
+  departureLabel: string;
+  timeSubtitle: string;
   rainProbability: number;
   temperature: number;
   windSpeed: number;
+  delayMins: string;
   delayRisk: 'Low' | 'Moderate' | 'High';
+  waterloggingSeverity: string;
+  lightningHazard: string;
   summary: string;
   actionRecommendation: string;
+  verdictBadge: string;
+  isRecommended?: boolean;
 }
 
 export interface RouteCheckpoint {

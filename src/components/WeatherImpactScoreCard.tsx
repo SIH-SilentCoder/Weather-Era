@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView } from 'react-native';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { WeatherImpactAnalysis } from '../types';
 import { useApp } from '../context/AppContext';
@@ -12,6 +12,7 @@ interface Props {
 export const WeatherImpactScoreCard: React.FC<Props> = ({ impactData }) => {
   const { theme, persona, t } = useApp();
   const [modalVisible, setModalVisible] = useState(false);
+  const [selectedFactorIndex, setSelectedFactorIndex] = useState<number | null>(null);
 
   const getScoreColor = (score: number) => {
     if (score >= 75) return theme.impactSevere;
@@ -44,54 +45,97 @@ export const WeatherImpactScoreCard: React.FC<Props> = ({ impactData }) => {
 
       {/* Main Score Gauge Row */}
       <View style={styles.scoreRow}>
-        <View style={[styles.scoreDial, { borderColor: scoreColor, backgroundColor: scoreColor + '12' }]}>
+        <View style={[styles.scoreDial, { borderColor: scoreColor, backgroundColor: scoreColor + '15' }]}>
           <Text style={[styles.scoreNumber, { color: scoreColor }]}>
             {impactData.impactScore}
           </Text>
           <Text style={[styles.scoreMax, { color: theme.textMuted }]}>/ 100</Text>
+          <View style={[styles.scoreMiniTag, { backgroundColor: scoreColor }]}>
+            <Text style={styles.scoreMiniTagText}>{impactData.impactLevel.toUpperCase()}</Text>
+          </View>
         </View>
 
         <View style={styles.scoreDetailsCol}>
           <View style={styles.levelRow}>
             <View style={[styles.levelTag, { backgroundColor: scoreColor + '20' }]}>
               <Text style={[styles.levelTagText, { color: scoreColor }]}>
-                {impactData.impactLevel.toUpperCase()} RISK
+                {impactData.severityBadge}
               </Text>
             </View>
             <Text style={[styles.contextTag, { color: theme.textSecondary }]}>
-              for {persona}
+              calibrated for {persona}
             </Text>
           </View>
           <Text style={[styles.scoreSummary, { color: theme.textPrimary }]}>
             {impactData.summary}
           </Text>
+          <Text style={[styles.tapHint, { color: theme.textMuted }]}>
+            Tap any factor below to inspect contributing vulnerability
+          </Text>
         </View>
       </View>
 
-      {/* Contributing Factors Visual Bars */}
+      {/* Interactive Contributing Factors List */}
       <View style={styles.factorsList}>
-        <Text style={[styles.factorsTitle, { color: theme.textSecondary }]}>
-          Contributing Factor Breakdown:
-        </Text>
-        {impactData.contributingFactors.map((factor, index) => (
-          <View key={index} style={styles.factorItem}>
-            <View style={styles.factorLabelRow}>
-              <Text style={[styles.factorName, { color: theme.textPrimary }]}>{factor.factor}</Text>
-              <Text style={[styles.factorDesc, { color: theme.textMuted }]}>{factor.description}</Text>
-            </View>
-            <View style={[styles.progressBarTrack, { backgroundColor: theme.surfaceSubtle }]}>
-              <View 
-                style={[
-                  styles.progressBarFill, 
-                  { 
-                    width: `${factor.score}%`, 
-                    backgroundColor: factor.score > 70 ? theme.impactSevere : factor.score > 40 ? theme.impactHigh : theme.impactLow 
-                  }
-                ]} 
-              />
-            </View>
-          </View>
-        ))}
+        <View style={styles.factorHeaderRow}>
+          <Text style={[styles.factorsTitle, { color: theme.textSecondary }]}>
+            Contributing Vulnerability Factors:
+          </Text>
+          <Text style={[styles.weightNote, { color: theme.textMuted }]}>
+            Weighted for {persona}
+          </Text>
+        </View>
+
+        {impactData.contributingFactors.map((factor, index) => {
+          const isSelected = selectedFactorIndex === index;
+          return (
+            <TouchableOpacity
+              key={index}
+              style={[
+                styles.factorItem,
+                isSelected && { backgroundColor: theme.surfaceSubtle, borderRadius: radii.md, padding: spacing.xs }
+              ]}
+              onPress={() => setSelectedFactorIndex(isSelected ? null : index)}
+              activeOpacity={0.8}
+            >
+              <View style={styles.factorLabelRow}>
+                <View style={styles.factorNameWithWeight}>
+                  <Text style={[styles.factorName, { color: theme.textPrimary }]}>{factor.factor}</Text>
+                  <View style={[styles.weightBadge, { backgroundColor: theme.surfaceSubtle }]}>
+                    <Text style={[styles.weightBadgeText, { color: theme.textSecondary }]}>{Math.round(factor.weight * 100)}% Weight</Text>
+                  </View>
+                </View>
+                <Text style={[styles.factorDesc, { color: factor.score > 70 ? theme.alertRed : theme.textSecondary, fontWeight: '700' }]}>
+                  {factor.score}/100 ({factor.impactLabel})
+                </Text>
+              </View>
+
+              <View style={[styles.progressBarTrack, { backgroundColor: theme.surfaceSubtle }]}>
+                <View 
+                  style={[
+                    styles.progressBarFill, 
+                    { 
+                      width: `${factor.score}%`, 
+                      backgroundColor: factor.score > 70 ? theme.impactSevere : factor.score > 40 ? theme.impactHigh : theme.impactLow 
+                    }
+                  ]} 
+                />
+              </View>
+
+              {/* In-depth expanded explanation if factor tapped */}
+              {isSelected && (
+                <View style={[styles.factorDetailDrawer, { borderTopColor: theme.border }]}>
+                  <Text style={[styles.factorDetailText, { color: theme.textPrimary }]}>
+                    📊 Observed: <Text style={{ fontWeight: '600' }}>{factor.description}</Text>
+                  </Text>
+                  <Text style={[styles.factorMitigationText, { color: theme.primary }]}>
+                    💡 Mitigation: Adjust schedule or protective equipment according to {factor.impactLabel} threshold.
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
       {/* "Why is my score high?" Explanation Modal */}
@@ -102,7 +146,7 @@ export const WeatherImpactScoreCard: React.FC<Props> = ({ impactData }) => {
               <View style={styles.modalHeaderTitleRow}>
                 <Ionicons name="analytics" size={20} color={theme.primary} />
                 <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>
-                  Impact Score Algorithm
+                  Contextual Impact Score Formula
                 </Text>
               </View>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
@@ -110,18 +154,23 @@ export const WeatherImpactScoreCard: React.FC<Props> = ({ impactData }) => {
               </TouchableOpacity>
             </View>
 
-            <Text style={[styles.modalIntro, { color: theme.textSecondary }]}>
-              {impactData.explanation}
-            </Text>
+            <ScrollView style={{ maxHeight: 380 }}>
+              <Text style={[styles.modalIntro, { color: theme.textSecondary }]}>
+                {impactData.explanation}
+              </Text>
 
-            <View style={[styles.algorithmCallout, { backgroundColor: theme.surfaceSubtle, borderColor: theme.border }]}>
-              <Text style={[styles.algorithmLabel, { color: theme.textPrimary }]}>
-                Persona Vulnerability Model:
-              </Text>
-              <Text style={[styles.algorithmDesc, { color: theme.textSecondary }]}>
-                Unlike static weather indexes, this score adjusts dynamically based on your selected persona ({persona}), active IMD radar advisories, and the sensitivity sliders in your Personal Weather DNA.
-              </Text>
-            </View>
+              <View style={[styles.algorithmCallout, { backgroundColor: theme.surfaceSubtle, borderColor: theme.border }]}>
+                <Text style={[styles.algorithmLabel, { color: theme.textPrimary }]}>
+                  Scientific Formula:
+                </Text>
+                <Text style={[styles.algorithmDesc, { color: theme.textSecondary }]}>
+                  Impact Score = Σ (Factor_Severity_i × Persona_Vulnerability_Weight_i) / Σ (Weights)
+                </Text>
+                <Text style={[styles.algorithmSubDesc, { color: theme.textMuted }]}>
+                  Unlike generic weather apps that report raw rain percentages, Mausam IQ maps the atmospheric observation directly against your occupational exposure risks.
+                </Text>
+              </View>
+            </ScrollView>
 
             <TouchableOpacity 
               style={[styles.modalCloseBtn, { backgroundColor: theme.primary }]}
@@ -180,21 +229,35 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   scoreDial: {
-    width: 76,
-    height: 76,
-    borderRadius: 38,
-    borderWidth: 3,
+    width: 82,
+    height: 82,
+    borderRadius: 41,
+    borderWidth: 3.5,
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
   },
   scoreNumber: {
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: '900',
-    lineHeight: 28,
+    lineHeight: 30,
   },
   scoreMax: {
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: '700',
+  },
+  scoreMiniTag: {
+    position: 'absolute',
+    bottom: -6,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: radii.full,
+  },
+  scoreMiniTagText: {
+    color: '#FFFFFF',
+    fontSize: 8,
+    fontWeight: '900',
+    letterSpacing: 0.3,
   },
   scoreDetailsCol: {
     flex: 1,
@@ -204,6 +267,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     marginBottom: 4,
+    flexWrap: 'wrap',
   },
   levelTag: {
     paddingHorizontal: 7,
@@ -211,18 +275,22 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   levelTagText: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
   contextTag: {
     fontSize: 11,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   scoreSummary: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
     lineHeight: 18,
+  },
+  tapHint: {
+    fontSize: 10,
+    marginTop: 3,
   },
   factorsList: {
     borderTopWidth: 1,
@@ -230,22 +298,44 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
     gap: 8,
   },
-  factorsTitle: {
-    fontSize: 11,
-    fontWeight: '600',
+  factorHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 2,
   },
+  factorsTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  weightNote: {
+    fontSize: 10,
+  },
   factorItem: {
-    gap: 4,
+    gap: 3,
   },
   factorLabelRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  factorNameWithWeight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   factorName: {
     fontSize: 11,
     fontWeight: '600',
+  },
+  weightBadge: {
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 3,
+  },
+  weightBadgeText: {
+    fontSize: 8,
+    fontWeight: '700',
   },
   factorDesc: {
     fontSize: 10,
@@ -259,6 +349,21 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 3,
   },
+  factorDetailDrawer: {
+    paddingTop: 4,
+    marginTop: 2,
+    borderTopWidth: 1,
+    gap: 2,
+  },
+  factorDetailText: {
+    fontSize: 10,
+    lineHeight: 14,
+  },
+  factorMitigationText: {
+    fontSize: 10,
+    fontWeight: '700',
+    lineHeight: 14,
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.65)',
@@ -268,9 +373,9 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: '100%',
-    maxWidth: 440,
+    maxWidth: 480,
     borderRadius: radii.xl,
-    padding: spacing.xl,
+    padding: spacing.lg,
     borderWidth: 1,
   },
   modalHeader: {
@@ -285,19 +390,19 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   modalTitle: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '800',
   },
   modalIntro: {
-    fontSize: 13,
-    lineHeight: 20,
+    fontSize: 12,
+    lineHeight: 18,
     marginBottom: spacing.md,
   },
   algorithmCallout: {
     padding: spacing.md,
     borderRadius: radii.lg,
     borderWidth: 1,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
   algorithmLabel: {
     fontSize: 12,
@@ -305,17 +410,24 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   algorithmDesc: {
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 11,
+    lineHeight: 16,
+    fontWeight: '600',
+  },
+  algorithmSubDesc: {
+    fontSize: 10,
+    lineHeight: 15,
+    marginTop: 4,
   },
   modalCloseBtn: {
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderRadius: radii.lg,
     alignItems: 'center',
+    marginTop: spacing.xs,
   },
   modalCloseBtnText: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
   },
 });

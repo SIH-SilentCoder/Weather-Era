@@ -1,4 +1,4 @@
-import { WeatherData, PersonaType, WeatherImpactAnalysis, ContributingFactor } from '../types';
+import { WeatherData, PersonaType, WeatherImpactAnalysis, ContributingFactor, ActionChecklistItem } from '../types';
 
 export const calculateWeatherImpact = (
   weather: WeatherData,
@@ -10,6 +10,8 @@ export const calculateWeatherImpact = (
   let userImpact = '';
   let suggestedAction = '';
   let summary = '';
+  let severityBadge = 'NORMAL';
+  let actionChecklist: ActionChecklistItem[] = [];
 
   // Calculate rain contribution
   const rainWeight = persona === 'farmer' ? 0.35 : persona === 'commuter' ? 0.40 : persona === 'traveller' ? 0.35 : 0.25;
@@ -19,40 +21,40 @@ export const calculateWeatherImpact = (
     score: rainScore,
     weight: rainWeight,
     impactLabel: weather.rainProbability > 70 ? 'High Risk' : weather.rainProbability > 40 ? 'Moderate' : 'Low',
-    description: `${weather.rainProbability}% probability with ${weather.rainfallMm} mm accumulation`,
+    description: `${weather.rainProbability}% probability • ${weather.rainfallMm} mm accumulation estimated`,
   });
 
   // Calculate wind contribution
   const windWeight = persona === 'fisherman' ? 0.45 : persona === 'outdoor' ? 0.30 : 0.20;
   const windScore = Math.min(100, Math.round((weather.windSpeed / 60) * 100));
   factors.push({
-    factor: 'Wind Velocity & Gusts',
+    factor: 'Wind Velocity & Convective Squall',
     score: windScore,
     weight: windWeight,
-    impactLabel: weather.windSpeed > 35 ? 'Severe Squall' : weather.windSpeed > 22 ? 'Breezy/Gusty' : 'Calm',
-    description: `${weather.windSpeed} km/h from ${weather.windDirection}`,
+    impactLabel: weather.windSpeed > 35 ? 'Severe Squall' : weather.windSpeed > 22 ? 'Gusty' : 'Calm',
+    description: `${weather.windSpeed} km/h from ${weather.windDirection} • sudden crosswind gusts`,
   });
 
   // Calculate visibility / road conditions
   const visWeight = persona === 'commuter' || persona === 'traveller' ? 0.25 : 0.15;
   const visScore = Math.max(0, Math.round((1 - weather.visibility / 10) * 100));
   factors.push({
-    factor: 'Road Visibility & Waterlogging',
+    factor: 'Road Surface & Underpass Waterlogging',
     score: visScore,
     weight: visWeight,
-    impactLabel: weather.visibility < 3 ? 'Poor Visibility' : weather.visibility < 6 ? 'Reduced' : 'Good',
-    description: `${weather.visibility} km visual horizon with wet asphalt risks`,
+    impactLabel: weather.visibility < 3 ? 'Submerged/Poor' : weather.visibility < 6 ? 'Reduced Speed' : 'Good',
+    description: `${weather.visibility} km visual horizon • high hydroplaning and water accumulation risk`,
   });
 
   // Calculate Air Quality (AQI)
   const aqiWeight = persona === 'health' ? 0.40 : persona === 'student' ? 0.25 : 0.15;
   const aqiScore = Math.min(100, Math.round((weather.aqi / 300) * 100));
   factors.push({
-    factor: 'Air Quality (AQI) Stress',
+    factor: 'Air Quality (AQI) Respiratory Load',
     score: aqiScore,
     weight: aqiWeight,
     impactLabel: weather.aqi > 200 ? 'Unhealthy' : weather.aqi > 100 ? 'Moderate' : 'Good',
-    description: `AQI index ${weather.aqi} (${weather.aqiCategory})`,
+    description: `AQI ${weather.aqi} (${weather.aqiCategory}) • elevated particulate suspension in damp air`,
   });
 
   // Weighted total score
@@ -61,100 +63,170 @@ export const calculateWeatherImpact = (
   score = Math.min(100, Math.max(10, Math.round(totalWeighted / normalizedWeight)));
 
   let impactLevel: 'Low' | 'Moderate' | 'High' | 'Severe' = 'Low';
-  if (score >= 75) impactLevel = 'Severe';
-  else if (score >= 55) impactLevel = 'High';
-  else if (score >= 35) impactLevel = 'Moderate';
+  if (score >= 75) {
+    impactLevel = 'Severe';
+    severityBadge = 'CRITICAL DISRUPTION RISK';
+  } else if (score >= 55) {
+    impactLevel = 'High';
+    severityBadge = 'HIGH IMPACT RISK';
+  } else if (score >= 35) {
+    impactLevel = 'Moderate';
+    severityBadge = 'MODERATE CAUTION';
+  } else {
+    severityBadge = 'LOW DISRUPTION';
+  }
 
-  // Persona-specific Weather -> Impact -> Action
+  // Persona-specific Weather -> Impact -> Action + Action Checklist
   switch (persona) {
     case 'farmer':
-      weatherFact = `Current rain probability is ${weather.rainProbability}% with ${weather.rainfallMm} mm rainfall and ${weather.humidity}% humidity.`;
+      weatherFact = `IMD Doppler ground observations confirm rain likelihood of ${weather.rainProbability}% with ${weather.rainfallMm} mm precipitation and ${weather.humidity}% relative humidity.`;
       if (weather.rainProbability > 65) {
-        userImpact = 'Heavy topsoil moisture saturation likely; pesticide and fertilizer spraying will wash off, leading to chemical waste.';
-        suggestedAction = 'Postpone chemical spraying and nitrogen application for 48 hours; clear drainage channels to avoid root waterlogging.';
-        summary = 'High moisture saturation alert for open fields.';
+        userImpact = 'Excessive soil moisture saturation in root zones; foliar pesticide & urea fertilizers will wash into runoff channels, leading to high chemical waste and nutrient leaching.';
+        suggestedAction = 'Strictly suspend foliar spraying and nitrogen broadcasting for 48 hours; clear drainage furrows to protect standing crops.';
+        summary = 'Critical moisture saturation alert for open agricultural fields.';
+        actionChecklist = [
+          { id: 'f-1', task: 'Halt all pesticide & chemical spray operations for 48 hours' },
+          { id: 'f-2', task: 'Open secondary drainage trenches along low-lying furrows' },
+          { id: 'f-3', task: 'Cover harvested grain stacks with waterproof silpaulin sheets' },
+          { id: 'f-4', task: 'Check tensiometer soil water tension before next pump cycle' },
+        ];
       } else {
-        userImpact = 'Favorable soil conditions for field preparation and crop growth.';
-        suggestedAction = 'Proceed with planned irrigation cycles according to soil tensiometer readings.';
+        userImpact = 'Favorable soil and ambient moisture balance for field bed tilling and nursery preparation.';
+        suggestedAction = 'Proceed with scheduled agronomic activities and standard drip/sprinkler cycles.';
         summary = 'Favorable weather for standard agricultural tasks.';
+        actionChecklist = [
+          { id: 'f-5', task: 'Verify irrigation canal water discharge schedule' },
+          { id: 'f-6', task: 'Inspect crop canopy for pest incubation in warm humidity' },
+        ];
       }
       break;
 
     case 'commuter':
-      weatherFact = `Rain probability is ${weather.rainProbability}% with gusty winds of ${weather.windSpeed} km/h and ${weather.visibility} km visibility.`;
+      weatherFact = `Precipitation likelihood is ${weather.rainProbability}% with gusty squall winds of ${weather.windSpeed} km/h and reduced surface visibility of ${weather.visibility} km.`;
       if (weather.rainProbability > 60 || weather.windSpeed > 25) {
-        userImpact = 'Peak hour commute speeds expected to decrease by 30–45%; high risk of localized waterlogging on arterial underpasses.';
-        suggestedAction = 'Leave 25–35 minutes earlier than usual or utilize elevated metro routes; carry rain-proof gear.';
-        summary = 'Commute disruption probable due to convective downpours.';
+        userImpact = 'Evening transit velocities on arterial expressways expected to plummet by 35–45%; localized water pooling likely at low underpasses (e.g. Mahipalpur, Dhaula Kuan, South Extension).';
+        suggestedAction = 'Depart 25–35 minutes earlier before 6:15 PM peak storm cells, or divert to elevated Metro lines; ensure vehicle wiper blades are operational.';
+        summary = 'Severe commute delay risk: Convective downpours coinciding with rush hour.';
+        actionChecklist = [
+          { id: 'c-1', task: 'Leave before 6:15 PM or delay departure past 9:15 PM' },
+          { id: 'c-2', task: 'Use elevated rapid metro corridor instead of surface arterial roads' },
+          { id: 'c-3', task: 'Check live underpass waterlogging status on Route Weather screen' },
+          { id: 'c-4', task: 'Keep raincoats, umbrellas, and waterproof phone pouches ready' },
+        ];
       } else {
-        userImpact = 'Normal traffic transit speeds with dry road corridors.';
-        suggestedAction = 'Standard departure schedule recommended.';
-        summary = 'Commute corridors clear.';
+        userImpact = 'Clear asphalt surface conditions with steady corridor vehicle throughput.';
+        suggestedAction = 'Standard departure timings recommended; maintain normal vehicle speeds.';
+        summary = 'Commute corridors clear with steady transit speeds.';
+        actionChecklist = [
+          { id: 'c-5', task: 'Standard commute departure schedule' },
+        ];
       }
       break;
 
     case 'traveller':
-      weatherFact = `Destination experiencing ${weather.condition} (${weather.temperature}°C) with wind gusts of ${weather.windSpeed} km/h.`;
+      weatherFact = `Destination transit sector experiencing ${weather.condition} (${weather.temperature}°C) with wind squalls of ${weather.windSpeed} km/h.`;
       if (weather.rainProbability > 60 || weather.windSpeed > 30) {
-        userImpact = 'Highway transit speeds reduced; airport ground movement and departure queues experiencing minor weather hold-ups.';
-        suggestedAction = 'Check live flight/train operational status before departing hotel; maintain extra buffer time for road legs.';
-        summary = 'Travel advisory: Allow extra transit buffer.';
+        userImpact = 'Intercity highway transit slowed by heavy tire spray; airport ground handling and runway turnarounds subject to 20–30 min convective weather delays.';
+        suggestedAction = 'Check airline or railway live running status before departing your hotel; maintain extra 45-minute transit buffer.';
+        summary = 'Intercity travel warning: Heavy road spray & airport flow control.';
+        actionChecklist = [
+          { id: 't-1', task: 'Verify flight/train delay status before checking out' },
+          { id: 't-2', task: 'Maintain double following distance on wet expressways' },
+          { id: 't-3', task: 'Switch vehicle headlamps to low-beam during heavy precipitation' },
+          { id: 't-4', task: 'Pre-book sheltered airport drop-offs' },
+        ];
       } else {
-        userImpact = 'Mild travel weather suitable for scenic routes and sightseeing.';
-        suggestedAction = 'Ideal window for intercity travel and outdoor tours.';
-        summary = 'Optimal travel conditions.';
+        userImpact = 'Stable highway corridors and on-time flight operations.';
+        suggestedAction = 'Optimal travel conditions for road trips and scenic transit.';
+        summary = 'Optimal intercity travel conditions.';
+        actionChecklist = [
+          { id: 't-5', task: 'Normal travel departure schedule' },
+        ];
       }
       break;
 
     case 'student':
-      weatherFact = `Current temperature is ${weather.temperature}°C, rain risk is ${weather.rainProbability}%, and AQI is ${weather.aqi}.`;
+      weatherFact = `Temperature is ${weather.temperature}°C, rain risk is ${weather.rainProbability}%, and particulate AQI is ${weather.aqi}.`;
       if (weather.rainProbability > 65) {
-        userImpact = 'Campus transit between blocks and sports grounds will be affected by sudden rain spells.';
-        suggestedAction = 'Carry waterproof bag cover and umbrella; verify whether outdoor practicals or sports sessions are shifted indoors.';
-        summary = 'Campus rain alert: Pack waterproof backpack cover.';
+        userImpact = 'Walking transit between academic blocks and outdoor campus labs exposed to intense convective downpours.';
+        suggestedAction = 'Encase laptop and textbooks in water-resistant backpack covers; verify whether outdoor sports practicals are relocated indoors.';
+        summary = 'Campus rain advisory: High risk of luggage & gadget water damage.';
+        actionChecklist = [
+          { id: 's-1', task: 'Put electronics/notebooks into waterproof inner plastic sleeve' },
+          { id: 's-2', task: 'Check college notification board for indoor lecture shift' },
+          { id: 's-3', task: 'Carry an umbrella and wear non-slip footwear' },
+        ];
       } else {
-        userImpact = 'Comfortable weather for transit to library, classes, and campus grounds.';
-        suggestedAction = 'Normal schedule for academic activities and campus commutes.';
-        summary = 'Good conditions for college campus activities.';
+        userImpact = 'Comfortable campus weather for library visits, lectures, and outdoor study sessions.';
+        suggestedAction = 'Regular academic schedule recommended.';
+        summary = 'Favorable conditions for college campus activities.';
+        actionChecklist = [
+          { id: 's-4', task: 'Standard academic day schedule' },
+        ];
       }
       break;
 
     case 'outdoor':
-      weatherFact = `UV Index is ${weather.uvIndex}, temperature is ${weather.temperature}°C (feels like ${weather.feelsLike}°C) with ${weather.windSpeed} km/h wind.`;
+      weatherFact = `UV Index is ${weather.uvIndex}, heat index feels like ${weather.feelsLike}°C, with squally winds of ${weather.windSpeed} km/h.`;
       if (weather.rainProbability > 60 || weather.windSpeed > 30) {
-        userImpact = 'Ground slickness, gusty headwinds, and sudden downpours pose injury and equipment risks.';
-        suggestedAction = 'Reschedule outdoor workout or turf sports to morning indoor courts; avoid open ground exposure during squalls.';
-        summary = 'Outdoor sports advisory: Indoor alternatives recommended.';
+        userImpact = 'Wet running tracks cause slip injuries; sudden 35+ km/h crosswinds make outdoor road cycling dangerous.';
+        suggestedAction = 'Shift workouts to indoor gyms or covered badminton/squash courts; avoid open ground exposure during convective cells.';
+        summary = 'Athletic caution: Shift to indoor fitness alternatives.';
+        actionChecklist = [
+          { id: 'o-1', task: 'Move evening run to indoor treadmill or gym facility' },
+          { id: 'o-2', task: 'Avoid cycling under large tree canopies during squalls' },
+          { id: 'o-3', task: 'Hydrate adequately to counter high humidity sweating' },
+        ];
       } else {
-        userImpact = 'Acceptable running and field sports conditions.';
-        suggestedAction = 'Optimal training hours: Before 10:30 AM or after 5:15 PM.';
-        summary = 'Favorable window for outdoor exercise.';
+        userImpact = 'Comfortable outdoor athletic conditions.';
+        suggestedAction = 'Optimal training window: Morning 06:00–08:30 AM or Evening after 17:30 PM.';
+        summary = 'Favorable athletic window for outdoor sports.';
+        actionChecklist = [
+          { id: 'o-4', task: 'Maintain hydration balance during field drills' },
+        ];
       }
       break;
 
     case 'health':
-      weatherFact = `Air Quality Index is ${weather.aqi} (${weather.aqiCategory}), humidity is ${weather.humidity}%, with ${weather.condition}.`;
+      weatherFact = `Air Quality Index is ${weather.aqi} (${weather.aqiCategory}) with high humidity of ${weather.humidity}% and ${weather.condition}.`;
       if (weather.aqi > 150 || weather.humidity > 80) {
-        userImpact = 'Elevated particulate load (PM2.5) combined with high moisture may trigger bronchial sensitivity or respiratory fatigue.';
-        suggestedAction = 'Wear N95 protective mask if outdoors; keep rescue inhalers accessible; utilize indoor HEPA filtration where available.';
-        summary = 'Respiratory & humidity caution for sensitive individuals.';
+        userImpact = 'Suspended PM2.5 particles trapped in high-humidity ambient air trigger bronchospasms, allergic rhinitis, and breathing fatigue.';
+        suggestedAction = 'Wear certified N95 respirators outdoors; keep prescribed bronchodilator inhalers handy; run indoor HEPA filtration.';
+        summary = 'Respiratory & particulate warning for sensitive individuals.';
+        actionChecklist = [
+          { id: 'h-1', task: 'Wear snug N95 particulate mask before stepping outdoors' },
+          { id: 'h-2', task: 'Keep fast-acting inhaler / antihistamine medication accessible' },
+          { id: 'h-3', task: 'Seal room windows facing high-traffic corridors' },
+          { id: 'h-4', task: 'Avoid strenuous cardio exercises in humid outdoor air' },
+        ];
       } else {
-        userImpact = 'Air quality within acceptable baseline range.';
-        suggestedAction = 'Standard precautions; moderate outdoor exposure is safe.';
-        summary = 'Air quality within comfortable limits.';
+        userImpact = 'Ambient air quality within tolerable threshold.';
+        suggestedAction = 'Normal precautions; moderate outdoor exposure safe for sensitive citizens.';
+        summary = 'Air quality within acceptable baseline range.';
+        actionChecklist = [
+          { id: 'h-5', task: 'Standard health precautions' },
+        ];
       }
       break;
 
     case 'fisherman':
-      weatherFact = `Coastal wind speed is ${weather.windSpeed} km/h with squally gusts; wave heights and swell elevated.`;
+      weatherFact = `Coastal wind velocity is ${weather.windSpeed} km/h with squalls; sea swell heights reaching 2.8–3.4 meters.`;
       if (weather.windSpeed > 35 || weather.rainProbability > 70) {
-        userImpact = 'Rough sea conditions with offshore chop and high squall risk beyond 5 nautical miles.';
-        suggestedAction = 'Adhere strictly to IMD-INCOIS marine advisory: Suspend mechanized boat operations in offshore zones.';
-        summary = 'Marine advisory: Deep sea operations suspended.';
+        userImpact = 'Severe turbulence, breaking wave chop, and dangerous rip currents offshore.';
+        suggestedAction = 'Strictly obey IMD-INCOIS Marine Warning: Suspend all mechanized and motorized fishing boat operations in coastal & deep-sea zones.';
+        summary = 'RED MARINE WARNING: Deep sea operations strictly prohibited.';
+        actionChecklist = [
+          { id: 'm-1', task: 'Anchor and lash all boats firmly to harbor moorings' },
+          { id: 'm-2', task: 'Do NOT venture into sea beyond coastal breakwater' },
+          { id: 'm-3', task: 'Keep VHF radio receiver tuned to emergency channel 16' },
+        ];
       } else {
-        userImpact = 'Moderate sea state suitable for artisanal and near-shore fishing craft.';
-        suggestedAction = 'Maintain standard VHF radio watch and observe coastal flag warnings.';
-        summary = 'Near-shore fishing conditions manageable.';
+        userImpact = 'Moderate coastal sea state suitable for artisanal near-shore craft.';
+        suggestedAction = 'Maintain standard VHF radio watch and observe harbor flag signals.';
+        summary = 'Near-shore fishing conditions manageable with routine caution.';
+        actionChecklist = [
+          { id: 'm-4', task: 'Check harbor warning flags before cast-off' },
+        ];
       }
       break;
   }
@@ -164,10 +236,12 @@ export const calculateWeatherImpact = (
   return {
     impactScore: score,
     impactLevel,
+    severityBadge,
     summary,
     weatherFact,
     userImpact,
     suggestedAction,
+    actionChecklist,
     contributingFactors: factors,
     explanation,
   };

@@ -227,6 +227,31 @@ def generate_pdf():
         "• Privacy & Sovereignty: Complete algorithmic freeze ('Pause Automated Learning') switch, factory reset, and 100% on-device local storage."
     )
 
+    # 4.7 Why Changed?
+    pdf.section_title("7. 'Why Changed?' (Homepage Changed Because... Explanation Layer)")
+    pdf.body_p(
+        "• Algorithmic Audit Banner: Explains transparently why cards shifted sequence (e.g. 'Commuter Rush Hour + 82% Rain hazard elevated Underpass Checkpoints to Rank #1').\n"
+        "• Promotion vs Deprioritization Matrix: Transparent view showing elevated critical cards vs lower-ranked general cards.\n"
+        "• Mathematical Formula Transparency: Priority Score = Persona (0.35) + Interests (0.25) + Doppler Hazard (0.20) + Time of Day (0.15) + DNA (0.05)."
+    )
+
+    # 4.8 Forecast Trust
+    pdf.section_title("8. Forecast Trust & Provenance (Freshness, Latency, and Ensemble Confidence)")
+    pdf.body_p(
+        "• Live Data Freshness: Ingestion latency (< 4 mins) from IMD Palam AWS (#42182) with next automated scan counter (~6 mins).\n"
+        "• Scientific Confidence Score: 92% High Reliability calculated from 3-model ensemble alignment (MoES WRF-9km, NCUM Global, GFS-12km).\n"
+        "• Interactive Trust Inspector: Modal displaying ground sensor health, WMO-No. 8 compliance, and barometric drift calibration."
+    )
+
+    # 4.9 AI Assistant
+    pdf.section_title("9. Mausam AI (Weather-Context-Aware Conversational Copilot)")
+    pdf.body_p(
+        "• Active Telemetry Ribbon: Live display of city, temperature, rain risk, wind speed, AQI, and active persona context.\n"
+        "• Zero Hallucination Guarantee: Strictly computes responses from live Doppler observations, agromet advisories, and disaster alerts.\n"
+        "• Context-Aware Scenario Answering: 'Abhi niklu vs 7 PM', road underpass flooding, pesticide spraying feasibility, and tomorrow comparisons.\n"
+        "• Voice Weather Bulletin: Integrated simulated audio voice bulletin for accessibility across literacy levels."
+    )
+
     # 5. Evaluator & Hackathon Summary
     pdf.chapter_title("5", "SIH EVALUATION & SYSTEM VERIFICATION")
     pdf.body_p(

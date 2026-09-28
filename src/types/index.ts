@@ -172,5 +172,8 @@ export interface WeatherDNA {
 export interface HomepageExplanation {
   primaryReason: string;
   triggers: string[];
+  promotedCards?: string[];
+  deprioritizedCards?: string[];
+  algorithmFormula?: string;
   timestamp: string;
 }

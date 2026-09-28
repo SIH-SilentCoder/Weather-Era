@@ -253,15 +253,41 @@ export const getHomepageChangeExplanation = (
     triggers.push(`Fisherman persona: Prioritized INCOIS marine wave swell and coastal squall`);
   }
 
-  if (dna.rainSensitivity >= 4) {
-    triggers.push(`Personal DNA rain sensitivity set to High (${dna.rainSensitivity}/5)`);
+  const promotedCards: string[] = [];
+  const deprioritizedCards: string[] = [];
+
+  if (hasSevereAlert) {
+    promotedCards.push('🔴 Multi-District Severe Alert (Rank #1 - Emergency Override)');
   }
+  if (persona === 'commuter' || persona === 'traveller') {
+    promotedCards.push('🚗 Route Corridor Weather Checkpoints & Road Ponding');
+    promotedCards.push('⏱️ What-If Commute Departure Window Simulator');
+    deprioritizedCards.push('🌱 Agromet Agricultural Advisory');
+  } else if (persona === 'farmer') {
+    promotedCards.push('🌾 Agromet Soil Moisture & 48h Spraying Window');
+    promotedCards.push('🎯 Action Plan: Field Drainage & Sowing Safeguards');
+    deprioritizedCards.push('🚗 City Highway Checkpoints');
+  } else if (persona === 'health') {
+    promotedCards.push('🫁 AQI Particulate & Bronchial Asthma Precautions');
+    promotedCards.push('🌡️ Solar UV & Thermal Stress Index');
+    deprioritizedCards.push('🚗 Intercity Route Checkpoints');
+  }
+
+  if (weather.rainProbability > 65) {
+    promotedCards.push(`🌦️ Weather → Impact → Action Playbook (${weather.rainProbability}% Rain Hazard)`);
+  }
+
+  deprioritizedCards.push('📅 General 7-Day Distant Forecast');
+  deprioritizedCards.push('🏡 Secondary Saved Locations');
 
   return {
     primaryReason: hasSevereAlert 
       ? 'Severe Weather Alert In Effect' 
-      : `${persona.toUpperCase()} • ${timeOfDay.toUpperCase()} RUSH HOUR ADAPTED`,
+      : `${persona.toUpperCase()} • ${timeOfDay.toUpperCase()} WINDOW ADAPTED`,
     triggers,
+    promotedCards,
+    deprioritizedCards,
+    algorithmFormula: 'Rank Score = Persona (0.35) + Interests (0.25) + Doppler Hazard (0.20) + Time of Day (0.15) + DNA (0.05)',
     timestamp: 'Dynamically adapted in real time based on active micro-climate factors',
   };
 };

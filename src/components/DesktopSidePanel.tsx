@@ -18,7 +18,62 @@ export const DesktopSidePanel: React.FC = () => {
 
   return (
     <View style={[styles.sidePanel, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-      {/* IMD Doppler Radar Status Widget */}
+      {/* Official IMD 4-Color Hazard Warning Matrix */}
+      <View style={[styles.widgetBox, { backgroundColor: theme.surfaceSubtle, borderColor: theme.border }]}>
+        <View style={styles.widgetHeader}>
+          <MaterialCommunityIcons name="shield-alert-outline" size={17} color={theme.alertOrange} />
+          <Text style={[styles.widgetTitle, { color: theme.textPrimary }]}>
+            IMD 4-Tier Disaster Alert Matrix
+          </Text>
+        </View>
+        <Text style={[styles.matrixSub, { color: theme.textMuted }]}>
+          National Meteorological Warning Division (Valid next 24h)
+        </Text>
+
+        <View style={styles.matrixGrid}>
+          {/* Red Alert */}
+          <View style={[styles.matrixItem, { backgroundColor: '#FEE2E2', borderColor: '#EF4444' }]}>
+            <View style={styles.matrixTop}>
+              <View style={[styles.matrixDot, { backgroundColor: '#DC2626' }]} />
+              <Text style={[styles.matrixColorLabel, { color: '#991B1B' }]}>RED (WARNING)</Text>
+            </View>
+            <Text style={styles.matrixAction}>Take Action: Cyclone / Heavy Squall</Text>
+            <Text style={styles.matrixZones}>Kerala Offshore, Lakshadweep</Text>
+          </View>
+
+          {/* Orange Alert */}
+          <View style={[styles.matrixItem, { backgroundColor: '#FFEDD5', borderColor: '#F97316' }]}>
+            <View style={styles.matrixTop}>
+              <View style={[styles.matrixDot, { backgroundColor: '#EA580C' }]} />
+              <Text style={[styles.matrixColorLabel, { color: '#9A3412' }]}>ORANGE (ALERT)</Text>
+            </View>
+            <Text style={styles.matrixAction}>Be Prepared: Convective Lightning & Rain</Text>
+            <Text style={styles.matrixZones}>Delhi-NCR, Haryana, West UP</Text>
+          </View>
+
+          {/* Yellow Watch */}
+          <View style={[styles.matrixItem, { backgroundColor: '#FEF9C3', borderColor: '#CA8A04' }]}>
+            <View style={styles.matrixTop}>
+              <View style={[styles.matrixDot, { backgroundColor: '#CA8A04' }]} />
+              <Text style={[styles.matrixColorLabel, { color: '#854D0E' }]}>YELLOW (WATCH)</Text>
+            </View>
+            <Text style={styles.matrixAction}>Be Aware: Isolated Heavy Showers</Text>
+            <Text style={styles.matrixZones}>Bihar, East UP, Assam, Bengal</Text>
+          </View>
+
+          {/* Green No Warning */}
+          <View style={[styles.matrixItem, { backgroundColor: '#DCFCE7', borderColor: '#16A34A' }]}>
+            <View style={styles.matrixTop}>
+              <View style={[styles.matrixDot, { backgroundColor: '#16A34A' }]} />
+              <Text style={[styles.matrixColorLabel, { color: '#166534' }]}>GREEN (NO WARNING)</Text>
+            </View>
+            <Text style={styles.matrixAction}>No Advisory: Clear / Fair Weather</Text>
+            <Text style={styles.matrixZones}>Punjab, West Rajasthan, Gujarat</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Doppler Radar Live Telemetry Widget */}
       <View style={[styles.widgetBox, { backgroundColor: theme.surfaceSubtle, borderColor: theme.border }]}>
         <View style={styles.widgetHeader}>
           <View style={styles.liveIndicator}>
@@ -35,14 +90,14 @@ export const DesktopSidePanel: React.FC = () => {
           onPress={() => setCurrentTab('map')}
         >
           <MaterialCommunityIcons name="map-marker-radius" size={14} color={theme.primary} />
-          <Text style={[styles.mapLinkText, { color: theme.primary }]}>View Live Geospatial Radar</Text>
+          <Text style={[styles.mapLinkText, { color: theme.primary }]}>View Geospatial Radar Map</Text>
         </TouchableOpacity>
       </View>
 
       {/* Quick AI Assistant Widget */}
       <View style={[styles.widgetBox, { backgroundColor: theme.surfaceSubtle, borderColor: theme.border }]}>
         <View style={styles.widgetHeader}>
-          <MaterialCommunityIcons name="robot-happy" size={18} color={theme.primary} />
+          <MaterialCommunityIcons name="robot-happy" size={17} color={theme.primary} />
           <Text style={[styles.widgetTitle, { color: theme.textPrimary }]}>Mausam AI Copilot</Text>
         </View>
         <Text style={[styles.widgetSubtitle, { color: theme.textMuted }]}>
@@ -75,13 +130,13 @@ export const DesktopSidePanel: React.FC = () => {
         )}
       </View>
 
-      {/* MoES / IMD Credibility Card */}
+      {/* Central Pollution Control Board (CPCB) AQI Telemetry */}
       <View style={[styles.credibilityCard, { backgroundColor: theme.surfaceSubtle }]}>
-        <Ionicons name="shield-checkmark-sharp" size={18} color={theme.secondary} />
+        <Ionicons name="leaf-outline" size={18} color={theme.accent} />
         <View style={{ flex: 1 }}>
-          <Text style={[styles.credTitle, { color: theme.textPrimary }]}>Official IMD Protocol</Text>
+          <Text style={[styles.credTitle, { color: theme.textPrimary }]}>CPCB Ambient Air Quality</Text>
           <Text style={[styles.credDesc, { color: theme.textMuted }]}>
-            WMO-standard atmospheric calibrations with INSAT-3DR geo-stationary multispectral radiance.
+            Continuous Ambient Air Quality Monitoring (CAAQM): PM2.5: 58 µg/m³ • PM10: 112 µg/m³.
           </Text>
         </View>
       </View>
@@ -91,7 +146,7 @@ export const DesktopSidePanel: React.FC = () => {
 
 const styles = StyleSheet.create({
   sidePanel: {
-    width: 320,
+    width: 340,
     borderLeftWidth: 1,
     padding: spacing.md,
     gap: spacing.md,
@@ -105,8 +160,51 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: spacing.xs,
+    marginBottom: 2,
     gap: 8,
+  },
+  widgetTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    flex: 1,
+  },
+  matrixSub: {
+    fontSize: 10,
+    marginBottom: spacing.sm,
+  },
+  matrixGrid: {
+    gap: 6,
+  },
+  matrixItem: {
+    padding: 6,
+    borderRadius: radii.md,
+    borderWidth: 1,
+  },
+  matrixTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  matrixDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  matrixColorLabel: {
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+  },
+  matrixAction: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginTop: 1,
+  },
+  matrixZones: {
+    fontSize: 9,
+    color: '#475569',
+    marginTop: 1,
   },
   liveIndicator: {
     flexDirection: 'row',
@@ -147,13 +245,8 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
   },
-  widgetTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    flex: 1,
-  },
   widgetSubtitle: {
-    fontSize: 11,
+    fontSize: 10,
     marginBottom: spacing.xs,
   },
   inputRow: {

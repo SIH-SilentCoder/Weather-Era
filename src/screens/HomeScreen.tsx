@@ -14,12 +14,15 @@ import { RouteWeatherCard } from '../components/RouteWeatherCard';
 import { SavedLocationsCarousel } from '../components/SavedLocationsCarousel';
 import { PersonaInsightsCard } from '../components/PersonaInsightsCard';
 import { DesktopSidePanel } from '../components/DesktopSidePanel';
+import { DesktopLeftRail } from '../components/DesktopLeftRail';
 import { spacing } from '../theme';
 
 export const HomeScreen: React.FC = () => {
   const { weatherData, persona, alerts, weatherDNA } = useApp();
   const { width } = useWindowDimensions();
-  const isDesktop = width >= 840;
+  
+  const showLeftRail = width >= 1180;
+  const showRightPanel = width >= 860;
 
   const impactData = calculateWeatherImpact(weatherData, persona);
   const rankedCards = getRankedCardsForPersona(persona, weatherData, alerts, weatherDNA);
@@ -63,10 +66,13 @@ export const HomeScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <View style={styles.bodyRow}>
-        {/* Main Feed Column */}
+        {/* Desktop Left Operations Rail (Large Screens) */}
+        {showLeftRail && <DesktopLeftRail />}
+
+        {/* Center Main Stage Feed Column */}
         <ScrollView
           style={styles.mainFeed}
-          contentContainerStyle={[styles.feedContent, isDesktop && styles.desktopFeedContent]}
+          contentContainerStyle={[styles.feedContent, showRightPanel && styles.desktopFeedContent]}
           showsVerticalScrollIndicator={false}
         >
           {/* Explanation Layer Banner */}
@@ -78,8 +84,8 @@ export const HomeScreen: React.FC = () => {
           <View style={{ height: 40 }} />
         </ScrollView>
 
-        {/* Desktop Contextual Side Panel */}
-        {isDesktop && <DesktopSidePanel />}
+        {/* Desktop Contextual Hazard & Telemetry Side Panel */}
+        {showRightPanel && <DesktopSidePanel />}
       </View>
     </View>
   );
@@ -100,7 +106,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxl,
   },
   desktopFeedContent: {
-    maxWidth: 780,
+    maxWidth: 720,
     width: '100%',
     alignSelf: 'center',
   },

@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, useWindowDimensions, Modal, S
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { useApp } from '../context/AppContext';
 import { PersonaType, LocationItem } from '../types';
-import { radii, spacing, typography } from '../theme';
+import { radii, spacing } from '../theme';
 
 export const NavHeader: React.FC = () => {
   const { 
@@ -24,10 +24,12 @@ export const NavHeader: React.FC = () => {
   } = useApp();
 
   const { width } = useWindowDimensions();
-  const isDesktop = width >= 840;
+  const isDesktop = width >= 960;
 
   const [personaModalVisible, setPersonaModalVisible] = useState(false);
   const [locationModalVisible, setLocationModalVisible] = useState(false);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [tickerDismissed, setTickerDismissed] = useState(false);
 
   const personas: { type: PersonaType; label: string; icon: any; color: string }[] = [
     { type: 'farmer', label: 'Farmer (किसान)', icon: 'tractor', color: '#16A34A' },
@@ -50,33 +52,75 @@ export const NavHeader: React.FC = () => {
   ];
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
-      {/* Top Organization Brand Bar */}
-      <View style={styles.brandRow}>
-        <View style={styles.brandLeft}>
-          <View style={[styles.imdLogoBadge, { backgroundColor: theme.primary }]}>
-            <MaterialCommunityIcons name="weather-partly-cloudy" size={20} color="#FFFFFF" />
+    <View style={[styles.wrapper, { backgroundColor: theme.surface }]}>
+      {/* 🇮🇳 Official Government of India Tri-Color Ribbon */}
+      <View style={styles.tirangaBar}>
+        <View style={[styles.tirangaStripe, { backgroundColor: '#FF9933' }]} />
+        <View style={[styles.tirangaStripe, { backgroundColor: '#FFFFFF' }]} />
+        <View style={[styles.tirangaStripe, { backgroundColor: '#138808' }]} />
+      </View>
+
+      {/* Official IMD Emergency Weather Ticker */}
+      {!tickerDismissed && (
+        <View style={[styles.alertTicker, { backgroundColor: '#7F1D1D', borderBottomColor: '#991B1B' }]}>
+          <View style={styles.tickerBadge}>
+            <View style={styles.blinkingDot} />
+            <Text style={styles.tickerBadgeText}>NOWCAST BULLETIN</Text>
           </View>
+          <Text style={styles.tickerText} numberOfLines={1}>
+            🔴 Severe thunderstorm, lightning & squall (50–60 km/h) over Delhi-NCR, Haryana, Western UP during next 3 hours. Citizens advised to avoid waterlogged underpasses.
+          </Text>
+          <TouchableOpacity onPress={() => setTickerDismissed(true)} style={styles.tickerClose}>
+            <Ionicons name="close" size={14} color="#FCA5A5" />
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Primary Brand Header */}
+      <View style={[styles.mainHeader, { borderBottomColor: theme.border }]}>
+        <View style={styles.headerLeft}>
+          {/* Official IMD Emblem */}
+          <View style={[styles.emblemBadge, { backgroundColor: theme.primaryDark }]}>
+            <MaterialCommunityIcons name="weather-partly-cloudy" size={24} color="#FFFFFF" />
+          </View>
+          
           <View>
-            <View style={styles.brandTextLine}>
-              <Text style={[styles.brandTitle, { color: theme.textPrimary }]}>MAUSAM IQ</Text>
-              <View style={[styles.govBadge, { backgroundColor: theme.primaryLight }]}>
-                <Text style={[styles.govBadgeText, { color: theme.primary }]}>IMD • MoES</Text>
+            <View style={styles.brandTitleRow}>
+              <Text style={[styles.hindiBrand, { color: theme.textPrimary }]}>
+                भारत मौसम विज्ञान विभाग
+              </Text>
+              <View style={[styles.officialTag, { backgroundColor: theme.primaryLight }]}>
+                <Text style={[styles.officialTagText, { color: theme.primary }]}>IMD • MoES</Text>
               </View>
             </View>
-            <Text style={[styles.brandSub, { color: theme.textSecondary }]}>
-              Ministry of Earth Sciences, Govt. of India
+            <Text style={[styles.englishBrand, { color: theme.textSecondary }]}>
+              INDIA METEOROLOGICAL DEPARTMENT • Ministry of Earth Sciences, Govt. of India
             </Text>
           </View>
         </View>
 
-        {/* Right Action Icons: Online Status, Language, Theme */}
-        <View style={styles.headerRightActions}>
-          {/* Offline/Online toggle pill */}
+        {/* Right Action Tools */}
+        <View style={styles.headerRight}>
+          {/* Audio Weather Bulletin Button */}
+          <TouchableOpacity 
+            style={[styles.audioBulletinBtn, { backgroundColor: isPlayingAudio ? theme.primary : theme.surfaceSubtle, borderColor: theme.border }]}
+            onPress={() => setIsPlayingAudio(!isPlayingAudio)}
+            accessibilityLabel="Listen to audio bulletin"
+          >
+            <MaterialCommunityIcons 
+              name={isPlayingAudio ? "volume-high" : "volume-medium"} 
+              size={16} 
+              color={isPlayingAudio ? "#FFFFFF" : theme.primary} 
+            />
+            <Text style={[styles.audioBtnText, { color: isPlayingAudio ? "#FFFFFF" : theme.textPrimary }]}>
+              {isPlayingAudio ? "Playing Bulletin..." : "Voice Bulletin"}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Network Radar Status */}
           <TouchableOpacity 
             style={[styles.statusPill, { backgroundColor: isOffline ? theme.alertOrangeBg : theme.alertGreenBg }]}
             onPress={() => setIsOffline(!isOffline)}
-            accessibilityLabel="Network simulation toggle"
           >
             <View style={[styles.dot, { backgroundColor: isOffline ? theme.alertOrange : theme.alertGreen }]} />
             <Text style={[styles.statusText, { color: isOffline ? theme.alertOrange : theme.alertGreen }]}>
@@ -84,58 +128,60 @@ export const NavHeader: React.FC = () => {
             </Text>
           </TouchableOpacity>
 
-          {/* Language Toggle (EN / HI) */}
+          {/* Bilingual Switch (EN / HI) */}
           <TouchableOpacity 
             style={[styles.pillButton, { backgroundColor: theme.surfaceSubtle, borderColor: theme.border }]}
             onPress={() => setLanguage(language === 'en' ? 'hi' : 'en')}
           >
-            <Text style={[styles.pillButtonText, { color: theme.textPrimary, fontWeight: '700' }]}>
+            <Text style={[styles.pillButtonText, { color: theme.textPrimary, fontWeight: '800' }]}>
               {language === 'en' ? 'हिन्दी' : 'EN'}
             </Text>
           </TouchableOpacity>
 
-          {/* Theme Toggle (Light / Dark) */}
+          {/* Theme Toggle */}
           <TouchableOpacity 
             style={[styles.iconButton, { backgroundColor: theme.surfaceSubtle, borderColor: theme.border }]}
             onPress={toggleTheme}
-            accessibilityLabel="Toggle Light Dark Theme"
+            accessibilityLabel="Toggle Theme"
           >
             <Ionicons 
               name={themeMode === 'light' ? 'moon-outline' : 'sunny-outline'} 
-              size={18} 
+              size={17} 
               color={theme.textPrimary} 
             />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Second Row: Desktop Nav or Context Selectors (Location & Persona) */}
-      <View style={styles.subBar}>
-        {/* Location Selector Pill */}
-        <TouchableOpacity 
-          style={[styles.selectorPill, { backgroundColor: theme.surfaceSubtle, borderColor: theme.border }]}
-          onPress={() => setLocationModalVisible(true)}
-        >
-          <Ionicons name="location-sharp" size={16} color={theme.primary} />
-          <Text style={[styles.selectorText, { color: theme.textPrimary }]} numberOfLines={1}>
-            {selectedLocation.name}
-          </Text>
-          <Ionicons name="chevron-down" size={14} color={theme.textMuted} />
-        </TouchableOpacity>
+      {/* Sub Navigation Bar: Location, Persona & Desktop Links */}
+      <View style={[styles.subBar, { borderBottomColor: theme.border }]}>
+        <View style={styles.subBarLeft}>
+          {/* Location Selector */}
+          <TouchableOpacity 
+            style={[styles.selectorPill, { backgroundColor: theme.surfaceSubtle, borderColor: theme.border }]}
+            onPress={() => setLocationModalVisible(true)}
+          >
+            <Ionicons name="location-sharp" size={15} color={theme.primary} />
+            <Text style={[styles.selectorText, { color: theme.textPrimary }]} numberOfLines={1}>
+              {selectedLocation.name}
+            </Text>
+            <Ionicons name="chevron-down" size={13} color={theme.textMuted} />
+          </TouchableOpacity>
 
-        {/* Persona Selector Pill */}
-        <TouchableOpacity 
-          style={[styles.personaPill, { backgroundColor: currentPersonaObj.color + '18', borderColor: currentPersonaObj.color + '55' }]}
-          onPress={() => setPersonaModalVisible(true)}
-        >
-          <MaterialCommunityIcons name={currentPersonaObj.icon} size={16} color={currentPersonaObj.color} />
-          <Text style={[styles.personaText, { color: currentPersonaObj.color }]}>
-            {currentPersonaObj.label.split(' ')[0]}
-          </Text>
-          <Ionicons name="swap-vertical" size={14} color={currentPersonaObj.color} />
-        </TouchableOpacity>
+          {/* Persona Selector */}
+          <TouchableOpacity 
+            style={[styles.personaPill, { backgroundColor: currentPersonaObj.color + '15', borderColor: currentPersonaObj.color + '50' }]}
+            onPress={() => setPersonaModalVisible(true)}
+          >
+            <MaterialCommunityIcons name={currentPersonaObj.icon} size={15} color={currentPersonaObj.color} />
+            <Text style={[styles.personaText, { color: currentPersonaObj.color }]}>
+              {currentPersonaObj.label.split(' ')[0]}
+            </Text>
+            <Ionicons name="swap-vertical" size={13} color={currentPersonaObj.color} />
+          </TouchableOpacity>
+        </View>
 
-        {/* Desktop Navigation Links */}
+        {/* Desktop Top Links */}
         {isDesktop && (
           <View style={styles.desktopNavRow}>
             {desktopNavItems.map((item) => {
@@ -151,12 +197,12 @@ export const NavHeader: React.FC = () => {
                 >
                   <MaterialCommunityIcons 
                     name={item.icon} 
-                    size={18} 
+                    size={17} 
                     color={isActive ? theme.primary : theme.textSecondary} 
                   />
                   <Text style={[
                     styles.desktopNavText, 
-                    { color: isActive ? theme.primary : theme.textSecondary, fontWeight: isActive ? '700' : '500' }
+                    { color: isActive ? theme.primary : theme.textSecondary, fontWeight: isActive ? '800' : '600' }
                   ]}>
                     {item.label}
                   </Text>
@@ -279,57 +325,121 @@ export const NavHeader: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
+  wrapper: {
     borderBottomWidth: 1,
+    borderBottomColor: 'rgba(150, 150, 150, 0.15)',
   },
-  brandRow: {
+  tirangaBar: {
+    flexDirection: 'row',
+    height: 3.5,
+    width: '100%',
+  },
+  tirangaStripe: {
+    flex: 1,
+    height: '100%',
+  },
+  alertTicker: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: 5,
+    borderBottomWidth: 1,
+    gap: 8,
   },
-  brandLeft: {
+  tickerBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  imdLogoBadge: {
-    width: 38,
-    height: 38,
-    borderRadius: radii.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
-  },
-  brandTextLine: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  brandTitle: {
-    fontSize: 17,
-    fontWeight: '800',
-    letterSpacing: 0.3,
-  },
-  govBadge: {
-    marginLeft: 8,
+    gap: 5,
+    backgroundColor: '#991B1B',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: radii.sm,
   },
-  govBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
+  blinkingDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#F87171',
+  },
+  tickerBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '800',
     letterSpacing: 0.5,
   },
-  brandSub: {
+  tickerText: {
+    color: '#FEE2E2',
     fontSize: 11,
-    marginTop: 1,
+    fontWeight: '600',
+    flex: 1,
   },
-  headerRightActions: {
+  tickerClose: {
+    padding: 2,
+  },
+  mainHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  emblemBadge: {
+    width: 42,
+    height: 42,
+    borderRadius: radii.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+    elevation: 3,
+  },
+  brandTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  hindiBrand: {
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: 0.2,
+  },
+  officialTag: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: radii.sm,
+  },
+  officialTagText: {
+    fontSize: 9,
+    fontWeight: '800',
+  },
+  englishBrand: {
+    fontSize: 10,
+    fontWeight: '600',
+    marginTop: 1,
+    maxWidth: 500,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  audioBulletinBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radii.full,
+    borderWidth: 1,
+  },
+  audioBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
   },
   statusPill: {
     flexDirection: 'row',
@@ -342,7 +452,7 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    marginRight: 6,
+    marginRight: 5,
   },
   statusText: {
     fontSize: 11,
@@ -355,7 +465,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   pillButtonText: {
-    fontSize: 12,
+    fontSize: 11,
   },
   iconButton: {
     width: 32,
@@ -368,52 +478,59 @@ const styles = StyleSheet.create({
   subBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: spacing.sm,
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 6,
+    borderBottomWidth: 1,
     flexWrap: 'wrap',
-    gap: 10,
+    gap: 8,
+  },
+  subBarLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   selectorPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: radii.full,
     borderWidth: 1,
-    gap: 6,
+    gap: 5,
   },
   selectorText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
-    maxWidth: 160,
+    maxWidth: 150,
   },
   personaPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: radii.full,
     borderWidth: 1,
-    gap: 6,
+    gap: 5,
   },
   personaText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
   },
   desktopNavRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: 'auto',
-    gap: 6,
+    gap: 4,
   },
   desktopNavItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    gap: 5,
   },
   desktopNavText: {
-    fontSize: 13,
+    fontSize: 12,
   },
   modalOverlay: {
     flex: 1,

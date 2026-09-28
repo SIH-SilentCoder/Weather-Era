@@ -16,7 +16,7 @@ export const WhyHomepageChangedBanner: React.FC = () => {
         activeOpacity={0.7}
       >
         <View style={styles.leftTitleRow}>
-          <MaterialCommunityIcons name="sparkles" size={16} color={theme.primary} />
+          <Ionicons name="sparkles" size={16} color={theme.primary} />
           <Text style={[styles.bannerTitle, { color: theme.textPrimary }]}>
             {t.whyHomepageChanged}
           </Text>

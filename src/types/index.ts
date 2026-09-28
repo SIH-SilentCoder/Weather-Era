@@ -164,6 +164,8 @@ export interface WeatherDNA {
   commuteFrequency: number;      // 1 - 5
   agricultureFocus: number;      // 1 - 5
   outdoorSports: number;         // 1 - 5
+  lightningStormSensitivity?: number; // 1 - 5
+  windSquallSensitivity?: number;     // 1 - 5
   learningPaused: boolean;
 }
 

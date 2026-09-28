@@ -26,6 +26,8 @@ export const INITIAL_WEATHER_DNA: WeatherDNA = {
   commuteFrequency: 5,
   agricultureFocus: 2,
   outdoorSports: 3,
+  lightningStormSensitivity: 4,
+  windSquallSensitivity: 3,
   learningPaused: false,
 };
 

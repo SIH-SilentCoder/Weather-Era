@@ -218,6 +218,15 @@ def generate_pdf():
         "• World Map: Global metropolises (Tokyo, London, NYC, Dubai), Jet Streams, ITCZ rain belt, and timezones."
     )
 
+    # 4.6 Weather DNA
+    pdf.section_title("6. Personal Weather DNA (Controllable Priority Profile & Data Sovereignty)")
+    pdf.body_p(
+        "• 8 Granular Controllable Sliders (1-5): Precipitation, Commute transit, AQI/PM2.5, Temperature stress, Agriculture/Spraying, Outdoor sports, Lightning storms, and Wind squalls.\n"
+        "• 1-Tap Archetype Presets: Urban Commuter, Kisan/Agro Care, Sensitive Health/AQI, Outdoor Athlete, and Storm Watcher.\n"
+        "• Dynamic Homepage Transformation: Live feedback banner explaining which cards are promoted or suppressed based on current DNA weights.\n"
+        "• Privacy & Sovereignty: Complete algorithmic freeze ('Pause Automated Learning') switch, factory reset, and 100% on-device local storage."
+    )
+
     # 5. Evaluator & Hackathon Summary
     pdf.chapter_title("5", "SIH EVALUATION & SYSTEM VERIFICATION")
     pdf.body_p(

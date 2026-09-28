@@ -13,7 +13,8 @@ export const PersonalizedGreetingBar: React.FC = () => {
     timeOfDay, 
     setTimeOfDayOverride, 
     selectedInterests, 
-    toggleInterest 
+    toggleInterest,
+    setCurrentTab
   } = useApp();
 
   const getGreeting = () => {
@@ -69,9 +70,20 @@ export const PersonalizedGreetingBar: React.FC = () => {
           </View>
         </View>
 
-        <View style={[styles.liveBadge, { backgroundColor: theme.alertGreenBg }]}>
-          <View style={[styles.liveDot, { backgroundColor: theme.alertGreen }]} />
-          <Text style={[styles.liveBadgeText, { color: theme.alertGreen }]}>DOPPLER ADAPTED</Text>
+        <View style={styles.topRightActions}>
+          <TouchableOpacity 
+            style={[styles.dnaQuickBtn, { backgroundColor: theme.primaryLight, borderColor: theme.primary }]}
+            onPress={() => setCurrentTab('profile')}
+            activeOpacity={0.8}
+          >
+            <MaterialCommunityIcons name="dna" size={13} color={theme.primary} />
+            <Text style={[styles.dnaQuickBtnText, { color: theme.primary }]}>DNA PROFILE</Text>
+          </TouchableOpacity>
+
+          <View style={[styles.liveBadge, { backgroundColor: theme.alertGreenBg }]}>
+            <View style={[styles.liveDot, { backgroundColor: theme.alertGreen }]} />
+            <Text style={[styles.liveBadgeText, { color: theme.alertGreen }]}>DOPPLER</Text>
+          </View>
         </View>
       </View>
 
@@ -191,6 +203,25 @@ const styles = StyleSheet.create({
     fontSize: 10,
     marginTop: 1,
     fontWeight: '600',
+  },
+  topRightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  dnaQuickBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: radii.full,
+    borderWidth: 1,
+  },
+  dnaQuickBtnText: {
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.3,
   },
   liveBadge: {
     flexDirection: 'row',

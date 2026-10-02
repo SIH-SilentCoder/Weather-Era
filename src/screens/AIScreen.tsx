@@ -102,7 +102,7 @@ export const AIScreen: React.FC = () => {
               <Text style={[styles.telemetryText, { color: theme.textPrimary }]}>{weatherData.windSpeed} km/h</Text>
             </View>
             <View style={styles.telemetryPill}>
-              <Ionicons name="air-filter" size={13} color="#EF4444" />
+              <Ionicons name="filter-outline" size={13} color="#EF4444" />
               <Text style={[styles.telemetryText, { color: theme.textPrimary }]}>AQI {weatherData.aqi}</Text>
             </View>
             <View style={styles.telemetryPill}>

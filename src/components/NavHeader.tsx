@@ -45,10 +45,11 @@ export const NavHeader: React.FC = () => {
 
   const currentPersonaObj = personas.find(p => p.type === persona) || personas[1];
 
-  const desktopNavItems: { tab: 'home' | 'forecast' | 'map' | 'ai' | 'profile'; label: string; icon: any }[] = [
+  const desktopNavItems: { tab: 'home' | 'forecast' | 'map' | 'alerts' | 'ai' | 'profile'; label: string; icon: any }[] = [
     { tab: 'home', label: 'Home', icon: 'home-variant' },
     { tab: 'forecast', label: 'Forecast', icon: 'chart-bell-curve-cumulative' },
     { tab: 'map', label: 'Weather Map', icon: 'map-search' },
+    { tab: 'alerts', label: 'Alerts', icon: 'alert-decagram' },
     { tab: 'ai', label: 'Mausam AI', icon: 'robot-outline' },
     { tab: 'profile', label: 'Profile & DNA', icon: 'account-cog-outline' },
   ];
@@ -83,20 +84,23 @@ export const NavHeader: React.FC = () => {
         <View style={styles.headerLeft}>
           {/* Official IMD Emblem */}
           <View style={[styles.emblemBadge, { backgroundColor: theme.primaryDark }]}>
-            <MaterialCommunityIcons name="weather-partly-cloudy" size={24} color="#FFFFFF" />
+            <MaterialCommunityIcons name="weather-partly-cloudy" size={isDesktop ? 22 : 19} color="#FFFFFF" />
           </View>
           
-          <View>
+          <View style={styles.brandTitleContainer}>
             <View style={styles.brandTitleRow}>
-              <Text style={[styles.hindiBrand, { color: theme.textPrimary }]}>
-                भारत मौसम विज्ञान विभाग
+              <Text style={[styles.hindiBrand, { color: theme.textPrimary }]} numberOfLines={1}>
+                {isDesktop ? 'भारत मौसम विज्ञान विभाग' : 'मौसम विज्ञान विभाग'}
               </Text>
               <View style={[styles.officialTag, { backgroundColor: theme.primaryLight }]}>
                 <Text style={[styles.officialTagText, { color: theme.primary }]}>IMD • MoES</Text>
               </View>
             </View>
-            <Text style={[styles.englishBrand, { color: theme.textSecondary }]}>
-              INDIA METEOROLOGICAL DEPARTMENT • Ministry of Earth Sciences, Govt. of India
+            <Text style={[styles.englishBrand, { color: theme.textSecondary }]} numberOfLines={1}>
+              {isDesktop 
+                ? 'INDIA METEOROLOGICAL DEPARTMENT • Ministry of Earth Sciences, Govt. of India'
+                : 'India Meteorological Department • MoES'
+              }
             </Text>
           </View>
         </View>
@@ -105,43 +109,56 @@ export const NavHeader: React.FC = () => {
         <View style={styles.headerRight}>
           {/* Audio Weather Bulletin Button */}
           <TouchableOpacity 
-            style={[styles.audioBulletinBtn, { backgroundColor: isPlayingAudio ? theme.primary : theme.surfaceSubtle, borderColor: theme.border }]}
+            style={[
+              isDesktop ? styles.audioBulletinBtn : styles.iconButton, 
+              { backgroundColor: isPlayingAudio ? theme.primary : theme.surfaceSubtle, borderColor: theme.border }
+            ]}
             onPress={() => setIsPlayingAudio(!isPlayingAudio)}
             accessibilityLabel="Listen to audio bulletin"
           >
             <MaterialCommunityIcons 
               name={isPlayingAudio ? "volume-high" : "volume-medium"} 
-              size={16} 
+              size={17} 
               color={isPlayingAudio ? "#FFFFFF" : theme.primary} 
             />
-            <Text style={[styles.audioBtnText, { color: isPlayingAudio ? "#FFFFFF" : theme.textPrimary }]}>
-              {isPlayingAudio ? "Playing Bulletin..." : "Voice Bulletin"}
-            </Text>
+            {isDesktop && (
+              <Text style={[styles.audioBtnText, { color: isPlayingAudio ? "#FFFFFF" : theme.textPrimary }]}>
+                {isPlayingAudio ? "Playing Bulletin..." : "Voice Bulletin"}
+              </Text>
+            )}
           </TouchableOpacity>
 
-          {/* Network Radar Status */}
-          <TouchableOpacity 
-            style={[styles.statusPill, { backgroundColor: isOffline ? theme.alertOrangeBg : theme.alertGreenBg }]}
-            onPress={() => setIsOffline(!isOffline)}
-          >
-            <View style={[styles.dot, { backgroundColor: isOffline ? theme.alertOrange : theme.alertGreen }]} />
-            <Text style={[styles.statusText, { color: isOffline ? theme.alertOrange : theme.alertGreen }]}>
-              {isOffline ? 'Offline Cache' : 'Live Doppler'}
-            </Text>
-          </TouchableOpacity>
+          {/* Network Radar Status - Only in mainHeader on Desktop */}
+          {isDesktop && (
+            <TouchableOpacity 
+              style={[styles.statusPill, { backgroundColor: isOffline ? theme.alertOrangeBg : theme.alertGreenBg }]}
+              onPress={() => setIsOffline(!isOffline)}
+            >
+              <View style={[styles.dot, { backgroundColor: isOffline ? theme.alertOrange : theme.alertGreen }]} />
+              <Text style={[styles.statusText, { color: isOffline ? theme.alertOrange : theme.alertGreen }]}>
+                {isOffline ? 'Offline Cache' : 'Live Doppler'}
+              </Text>
+            </TouchableOpacity>
+          )}
 
-          {/* India-First Regional Language Selector (7+ Indian Languages) */}
+          {/* India-First Regional Language Selector */}
           <TouchableOpacity 
-            style={[styles.pillButton, { backgroundColor: theme.surfaceSubtle, borderColor: theme.border, minHeight: 36, minWidth: 44 }]}
+            style={[
+              isDesktop ? styles.pillButton : styles.compactLangButton, 
+              { backgroundColor: theme.surfaceSubtle, borderColor: theme.border }
+            ]}
             onPress={() => setLanguageModalVisible(true)}
             accessible={true}
             accessibilityRole="button"
             accessibilityLabel={`Change regional language. Current: ${AVAILABLE_LANGUAGES.find(l => l.code === language)?.name || 'English'}`}
             accessibilityHint="Double tap to open regional language selection dialog"
           >
-            <Ionicons name="globe-outline" size={14} color={theme.primary} style={{ marginRight: 4 }} />
-            <Text style={[styles.pillButtonText, { color: theme.textPrimary, fontWeight: '800' }]}>
-              {AVAILABLE_LANGUAGES.find(l => l.code === language)?.nativeName || 'हिन्दी'}
+            <Ionicons name="globe-outline" size={14} color={theme.primary} style={isDesktop ? { marginRight: 4 } : { marginRight: 2 }} />
+            <Text style={[isDesktop ? styles.pillButtonText : styles.compactLangText, { color: theme.textPrimary }]}>
+              {isDesktop 
+                ? (AVAILABLE_LANGUAGES.find(l => l.code === language)?.nativeName || 'हिन्दी')
+                : language.toUpperCase()
+              }
             </Text>
           </TouchableOpacity>
 
@@ -153,14 +170,14 @@ export const NavHeader: React.FC = () => {
           >
             <Ionicons 
               name={themeMode === 'light' ? 'moon-outline' : 'sunny-outline'} 
-              size={17} 
+              size={16} 
               color={theme.textPrimary} 
             />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Sub Navigation Bar: Location, Persona & Desktop Links */}
+      {/* Sub Navigation Bar: Location, Persona & Status / Desktop Links */}
       <View style={[styles.subBar, { borderBottomColor: theme.border }]}>
         <View style={styles.subBarLeft}>
           {/* Location Selector */}
@@ -168,11 +185,11 @@ export const NavHeader: React.FC = () => {
             style={[styles.selectorPill, { backgroundColor: theme.surfaceSubtle, borderColor: theme.border }]}
             onPress={() => setLocationModalVisible(true)}
           >
-            <Ionicons name="location-sharp" size={15} color={theme.primary} />
+            <Ionicons name="location-sharp" size={13} color={theme.primary} />
             <Text style={[styles.selectorText, { color: theme.textPrimary }]} numberOfLines={1}>
               {selectedLocation.name}
             </Text>
-            <Ionicons name="chevron-down" size={13} color={theme.textMuted} />
+            <Ionicons name="chevron-down" size={11} color={theme.textMuted} />
           </TouchableOpacity>
 
           {/* Persona Selector */}
@@ -180,13 +197,26 @@ export const NavHeader: React.FC = () => {
             style={[styles.personaPill, { backgroundColor: currentPersonaObj.color + '15', borderColor: currentPersonaObj.color + '50' }]}
             onPress={() => setPersonaModalVisible(true)}
           >
-            <MaterialCommunityIcons name={currentPersonaObj.icon} size={15} color={currentPersonaObj.color} />
+            <MaterialCommunityIcons name={currentPersonaObj.icon} size={13} color={currentPersonaObj.color} />
             <Text style={[styles.personaText, { color: currentPersonaObj.color }]}>
               {currentPersonaObj.label.split(' ')[0]}
             </Text>
-            <Ionicons name="swap-vertical" size={13} color={currentPersonaObj.color} />
+            <Ionicons name="swap-vertical" size={11} color={currentPersonaObj.color} />
           </TouchableOpacity>
         </View>
+
+        {/* Mobile Radar Status Indicator */}
+        {!isDesktop && (
+          <TouchableOpacity 
+            style={[styles.statusPill, { backgroundColor: isOffline ? theme.alertOrangeBg : theme.alertGreenBg }]}
+            onPress={() => setIsOffline(!isOffline)}
+          >
+            <View style={[styles.dot, { backgroundColor: isOffline ? theme.alertOrange : theme.alertGreen }]} />
+            <Text style={[styles.statusText, { color: isOffline ? theme.alertOrange : theme.alertGreen }]}>
+              {isOffline ? 'Offline' : 'Doppler Live'}
+            </Text>
+          </TouchableOpacity>
+        )}
 
         {/* Desktop Top Links */}
         {isDesktop && (
@@ -452,53 +482,77 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 7,
     borderBottomWidth: 1,
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
+    minWidth: 0,
+    marginRight: 8,
   },
   emblemBadge: {
-    width: 42,
-    height: 42,
+    width: 36,
+    height: 36,
     borderRadius: radii.md,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 10,
-    elevation: 3,
+    marginRight: 8,
+    flexShrink: 0,
+    elevation: 2,
+  },
+  brandTitleContainer: {
+    flex: 1,
+    minWidth: 0,
+    justifyContent: 'center',
   },
   brandTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
+    flexWrap: 'nowrap',
   },
   hindiBrand: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '800',
-    letterSpacing: 0.2,
+    letterSpacing: 0.1,
+    flexShrink: 1,
   },
   officialTag: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: radii.sm,
+    paddingHorizontal: 5,
+    paddingVertical: 1.5,
+    borderRadius: radii.xs,
+    flexShrink: 0,
   },
   officialTagText: {
-    fontSize: 9,
+    fontSize: 8.5,
     fontWeight: '800',
   },
   englishBrand: {
-    fontSize: 10,
+    fontSize: 9.5,
     fontWeight: '600',
     marginTop: 1,
-    maxWidth: 500,
   },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
+    flexShrink: 0,
+  },
+  compactLangButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 7,
+    paddingVertical: 5,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    minHeight: 32,
+  },
+  compactLangText: {
+    fontSize: 10.5,
+    fontWeight: '800',
   },
   audioBulletinBtn: {
     flexDirection: 'row',
@@ -517,17 +571,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 8,
-    paddingVertical: 5,
+    paddingVertical: 4.5,
     borderRadius: radii.full,
   },
   dot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    marginRight: 5,
+    marginRight: 4,
   },
   statusText: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: '600',
   },
   pillButton: {
@@ -551,42 +605,43 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: 6,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 5,
     borderBottomWidth: 1,
-    flexWrap: 'wrap',
-    gap: 8,
   },
   subBarLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
+    flex: 1,
+    minWidth: 0,
   },
   selectorPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: radii.full,
     borderWidth: 1,
-    gap: 5,
+    gap: 4,
+    maxWidth: 160,
   },
   selectorText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
-    maxWidth: 150,
+    flexShrink: 1,
   },
   personaPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: radii.full,
     borderWidth: 1,
-    gap: 5,
+    gap: 4,
   },
   personaText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
   },
   desktopNavRow: {

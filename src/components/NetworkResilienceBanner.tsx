@@ -38,7 +38,7 @@ export const NetworkResilienceBanner: React.FC<NetworkResilienceBannerProps> = (
         }
       ]}
       accessible={true}
-      accessibilityRole="region"
+      accessibilityRole="none"
       accessibilityLabel={isOffline ? "Low Network Mode: Showing cached weather data" : "Network status: Online Live Doppler"}
     >
       <View style={styles.topRow}>

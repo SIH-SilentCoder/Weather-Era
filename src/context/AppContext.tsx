@@ -63,8 +63,8 @@ interface AppContextType {
   weatherDNA: WeatherDNA;
   updateDNA: (key: keyof WeatherDNA, val: any) => void;
   resetDNA: () => void;
-  currentTab: 'home' | 'forecast' | 'map' | 'ai' | 'profile';
-  setCurrentTab: (tab: 'home' | 'forecast' | 'map' | 'ai' | 'profile') => void;
+  currentTab: 'home' | 'forecast' | 'map' | 'alerts' | 'ai' | 'profile';
+  setCurrentTab: (tab: 'home' | 'forecast' | 'map' | 'alerts' | 'ai' | 'profile') => void;
   isOffline: boolean;
   setIsOffline: (val: boolean) => void;
   isRefreshing: boolean;
@@ -82,10 +82,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [selectedLocation, setSelectedLocation] = useState<LocationItem>(DEFAULT_SAVED_LOCATIONS[0]);
   const [weatherData, setWeatherData] = useState<WeatherData>(MOCK_WEATHER_DATABASE['delhi']);
   const [alerts, setAlerts] = useState<WeatherAlert[]>(MOCK_ACTIVE_ALERTS);
-  const [themeMode, setThemeMode] = useState<'light' | 'dark'>('dark');
+  const [themeMode, setThemeMode] = useState<'light' | 'dark'>('light');
   const [language, setLanguage] = useState<Language>('en');
   const [weatherDNA, setWeatherDNA] = useState<WeatherDNA>(INITIAL_WEATHER_DNA);
-  const [currentTab, setCurrentTab] = useState<'home' | 'forecast' | 'map' | 'ai' | 'profile'>('home');
+  const [currentTab, setCurrentTab] = useState<'home' | 'forecast' | 'map' | 'alerts' | 'ai' | 'profile'>('home');
   const [isOffline, setIsOffline] = useState<boolean>(false);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
